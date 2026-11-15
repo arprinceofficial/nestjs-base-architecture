@@ -142,6 +142,50 @@ Each log entry in MongoDB includes:
 
 ---
 
+## 🏛️ Domain Architecture (Admin, CMS, Customer)
+
+Just like domain-partitioned controllers and routes in Laravel (`routes/api/admin.php`, `cms.php`, `customer.php`), NestJS accomplishes this using **Modular Architecture** and **`RouterModule`** (`@nestjs/core`):
+
+```text
+src/modules/
+├── admin/       --> Routes under /api/v1/admin/*
+│   ├── auth/              (Authentication, OTP, Reset Password)
+│   ├── roles/             (Roles & Matrix Permissions)
+│   ├── tree-entities/     (Hierarchical Menu Navigation)
+│   ├── users/             (User & UserInfo Management)
+│   └── admin.module.ts    (Admin aggregate module)
+├── cms/         --> Routes under /api/v1/cms/*
+│   ├── cms.controller.ts
+│   ├── cms.service.ts
+│   └── cms.module.ts
+├── customer/    --> Routes under /api/v1/customer/*
+│   ├── customer.controller.ts
+│   ├── customer.service.ts
+│   └── customer.module.ts
+└── logger/      --> Global Error Logger & MongoDB tracking
+```
+
+### Centralized Routing Configuration (`src/app.module.ts`)
+```typescript
+RouterModule.register([
+  {
+    path: 'admin',
+    module: AdminModule,
+    children: [AuthModule, RolesModule, TreeEntitiesModule, UsersModule],
+  },
+  {
+    path: 'cms',
+    module: CmsModule,
+  },
+  {
+    path: 'customer',
+    module: CustomerModule,
+  },
+])
+```
+
+---
+
 ## 🛠️ How to Extend this Project (Developer Instructions)
 
 When adding a new feature or module to this architecture:
@@ -165,19 +209,36 @@ npm run prisma:push
 npm run prisma:generate
 ```
 
-### Step 2: Create Module Files
-Create your module under `src/modules/<feature-name>/`:
+### Step 2: Create Module Files in the Appropriate Domain
+Choose which domain the feature belongs to:
+- **Admin**: `src/modules/admin/<feature>/`
+- **CMS**: `src/modules/cms/<feature>/`
+- **Customer**: `src/modules/customer/<feature>/`
+
+Create standard NestJS components:
 - `dto/`: Request validation classes using `class-validator` and `@nestjs/swagger`.
 - `<feature>.service.ts`: Business logic utilizing `PrismaService`.
-- `<feature>.controller.ts`: Route definitions with `@Controller('admin/feature-name')` (automatically mapped to `/api/v1/admin/feature-name`).
+- `<feature>.controller.ts`: Route definitions (e.g., `@Controller('products')` inside `admin` will automatically route to `/api/v1/admin/products`).
 - `<feature>.module.ts`: NestJS module declaration.
 
-### Step 3: Register in App Module
-Import your new module in `src/app.module.ts`:
+### Step 3: Register in Domain & Router
+Add the new module to its domain module (e.g., `AdminModule`) and the `RouterModule` children list in `src/app.module.ts`:
 ```typescript
-@Module({
-  imports: [
-    PrismaModule,
+RouterModule.register([
+  {
+    path: 'admin',
+    module: AdminModule,
+    children: [
+      AuthModule,
+      RolesModule,
+      TreeEntitiesModule,
+      UsersModule,
+      ProductsModule, // <-- your new module
+    ],
+  },
+  // ...
+])
+```
     AuthModule,
     RolesModule,
     TreeEntitiesModule,

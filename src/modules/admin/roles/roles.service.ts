@@ -4,12 +4,12 @@ import {
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
-import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
-import { ApiMessages } from '../../common/constants/api-messages.constant';
-import { ApiResponse } from '../../common/interfaces/api-response.interface';
+import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
+import { ApiMessages } from '../../../common/constants/api-messages.constant';
+import { ApiResponse } from '../../../common/interfaces/api-response.interface';
 import { Prisma } from '@prisma/client';
 
 @Injectable()

@@ -12,8 +12,8 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { RolesService } from './roles.service';
 import { UpdateRolePermissionsDto } from './dto/update-role-permissions.dto';
 
-@ApiTags('Role Permissions')
-@Controller('admin/role-permissions')
+@ApiTags('Admin - Role Permissions')
+@Controller('role-permissions')
 export class RolePermissionsController {
   constructor(private readonly rolesService: RolesService) {}
 

@@ -426,14 +426,28 @@ async function generatePostmanCollection() {
     ],
   };
 
+  const cmsFolder = {
+    name: 'CMS',
+    item: [
+      createPostmanRequest('GET Status', 'GET', 'api/v1/cms/status'),
+    ],
+  };
+
+  const customerFolder = {
+    name: 'Customer',
+    item: [
+      createPostmanRequest('GET Status', 'GET', 'api/v1/customer/status'),
+    ],
+  };
+
   const postmanCollection = {
     info: {
       _postman_id: randomUUID(),
       name: 'nestjs-basement',
-      description: 'nestjs-basement API Collection with Admin hierarchy, Auth, Menu, Role, and Users',
+      description: 'nestjs-basement API Collection partitioned into Admin, CMS, and Customer',
       schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
     },
-    item: [adminFolder],
+    item: [adminFolder, cmsFolder, customerFolder],
     event: [],
     variable: [],
   };

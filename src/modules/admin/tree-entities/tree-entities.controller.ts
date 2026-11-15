@@ -17,10 +17,10 @@ import { TreeEntitiesService } from './tree-entities.service';
 import { CreateTreeEntityDto } from './dto/create-tree-entity.dto';
 import { UpdateTreeEntityDto } from './dto/update-tree-entity.dto';
 import { DeleteMenuDto } from './dto/delete-menu.dto';
-import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
+import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 
-@ApiTags('Menu Setup (Tree Entity)')
-@Controller('admin/tree-entity')
+@ApiTags('Admin - Menu Setup (Tree Entity)')
+@Controller('tree-entity')
 export class TreeEntitiesController {
   constructor(private readonly treeEntitiesService: TreeEntitiesService) {}
 

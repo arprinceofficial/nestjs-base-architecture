@@ -19,8 +19,8 @@ import {
 import { Public } from './decorators/public.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
-@ApiTags('Auth')
-@Controller('admin')
+@ApiTags('Admin - Auth')
+@Controller()
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
