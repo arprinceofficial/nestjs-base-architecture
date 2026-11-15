@@ -115,9 +115,17 @@ npm run postman:export
 
 ---
 
-## 🪵 Centralized Error Tracking (MongoDB)
+## 🪵 Centralized Error Tracking (MongoDB & Local File Fallback)
 
-All application errors, unhandled exceptions, and rejected requests are automatically captured by the global exception filter and persisted to **MongoDB** in the `error_logs` collection.
+All application errors, unhandled exceptions, and rejected requests are automatically captured by the global exception filter and persisted.
+
+### Dual Storage Strategy (MongoDB vs. Local File)
+1. **With MongoDB (`MONGODB_URI` set in `.env`)**:
+   - Error logs are stored in MongoDB in the `error_logs` collection.
+2. **Without MongoDB (`MONGODB_URI` omitted or empty)**:
+   - The application boots without needing MongoDB.
+   - Logs automatically fallback to local file storage at **`logs/errors.log`**.
+   - The `logs/` directory is automatically ignored by `.gitignore` so logs are never committed to git.
 
 ### Error Response Envelope
 Every failed API call returns a unique tracking `error_id`:
@@ -130,7 +138,7 @@ Every failed API call returns a unique tracking `error_id`:
 ```
 
 ### Stored Error Data
-Each log entry in MongoDB includes:
+Each log entry in MongoDB or `logs/errors.log` includes:
 - `error_id`: Unique reference code returned to the client for instant debugging
 - `status_code`: HTTP status code (400, 401, 404, 500, etc.)
 - `message` & `error_name`: Exception type and descriptive message

@@ -1,4 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import * as fs from 'fs';
+import * as path from 'path';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ErrorLog, ErrorLogDocument } from './schemas/error-log.schema';
@@ -24,7 +26,10 @@ export interface CreateErrorLogParams {
 
 @Injectable()
 export class MongoLoggerService {
-  private readonly fallbackLogger = new Logger('MongoLogger');
+  private readonly fallbackLogger = new Logger('AppLogger');
+  private readonly logsDir = path.join(process.cwd(), 'logs');
+  private readonly logFilePath = path.join(process.cwd(), 'logs', 'errors.log');
+
   private static readonly SENSITIVE_KEYS = new Set([
     'password',
     'password_confirmation',
@@ -39,9 +44,27 @@ export class MongoLoggerService {
   ]);
 
   constructor(
+    @Optional()
     @InjectModel(ErrorLog.name)
-    private readonly errorLogModel: Model<ErrorLogDocument>,
-  ) {}
+    private readonly errorLogModel?: Model<ErrorLogDocument>,
+  ) {
+    this.ensureLogsDirectory();
+    if (!this.errorLogModel) {
+      this.fallbackLogger.log(
+        'MongoDB URI not configured. All application error logs will default to local file storage at logs/errors.log',
+      );
+    }
+  }
+
+  private ensureLogsDirectory(): void {
+    try {
+      if (!fs.existsSync(this.logsDir)) {
+        fs.mkdirSync(this.logsDir, { recursive: true });
+      }
+    } catch (e: any) {
+      this.fallbackLogger.error(`Could not create logs directory: ${e.message}`);
+    }
+  }
 
   /**
    * Sanitizes payloads to avoid storing sensitive information like passwords and tokens in logs.
@@ -69,26 +92,65 @@ export class MongoLoggerService {
   }
 
   /**
-   * Persists an error log to MongoDB. Falls back to console logger if MongoDB operation fails.
+   * Appends an error record to the local project logs/errors.log file.
    */
-  async logError(params: CreateErrorLogParams): Promise<void> {
+  private writeToFile(params: CreateErrorLogParams, sanitizedBody: any, sanitizedHeaders: any): void {
     try {
-      const sanitizedBody = this.sanitize(params.body);
-      const sanitizedHeaders = this.sanitize(params.headers);
+      this.ensureLogsDirectory();
 
-      await this.errorLogModel.create({
-        ...params,
+      const logRecord = {
+        timestamp: new Date().toISOString(),
+        error_id: params.error_id,
+        level: params.level || 'error',
+        status_code: params.status_code,
+        message: params.message,
+        error_name: params.error_name,
+        path: params.path,
+        method: params.method,
+        ip: params.ip,
+        user_agent: params.user_agent,
+        user_id: params.user_id,
+        user_email: params.user_email,
+        query: params.query,
+        params: params.params,
         body: sanitizedBody,
         headers: sanitizedHeaders,
-        created_at: new Date(),
-      });
+        stack: params.stack,
+      };
+
+      const line = JSON.stringify(logRecord) + '\n';
+      fs.appendFileSync(this.logFilePath, line, 'utf8');
     } catch (err: any) {
-      // Graceful fallback: never crash the HTTP request if logging fails
-      this.fallbackLogger.error(
-        `Failed to save error log to MongoDB [${params.error_id}]: ${err.message}`,
-        err.stack,
-      );
+      this.fallbackLogger.error(`Failed to write to logs/errors.log: ${err.message}`);
     }
+  }
+
+  /**
+   * Persists an error log to MongoDB if configured, otherwise falls back to local file storage at logs/errors.log.
+   */
+  async logError(params: CreateErrorLogParams): Promise<void> {
+    const sanitizedBody = this.sanitize(params.body);
+    const sanitizedHeaders = this.sanitize(params.headers);
+
+    // 1. If MongoDB model is available, attempt to write to MongoDB
+    if (this.errorLogModel) {
+      try {
+        await this.errorLogModel.create({
+          ...params,
+          body: sanitizedBody,
+          headers: sanitizedHeaders,
+          created_at: new Date(),
+        });
+        return;
+      } catch (err: any) {
+        this.fallbackLogger.warn(
+          `MongoDB write failed for [${params.error_id}]: ${err.message}. Falling back to local file log.`,
+        );
+      }
+    }
+
+    // 2. Default storage when MongoDB is not configured or fails: write to project logs/errors.log
+    this.writeToFile(params, sanitizedBody, sanitizedHeaders);
   }
 
   /**
@@ -101,20 +163,32 @@ export class MongoLoggerService {
     limit?: number;
     skip?: number;
   }) {
-    const query: Record<string, any> = {};
-    if (filter.status_code) query.status_code = filter.status_code;
-    if (filter.user_id) query.user_id = filter.user_id;
-    if (filter.error_id) query.error_id = filter.error_id;
+    if (this.errorLogModel) {
+      const query: Record<string, any> = {};
+      if (filter.status_code) query.status_code = filter.status_code;
+      if (filter.user_id) query.user_id = filter.user_id;
+      if (filter.error_id) query.error_id = filter.error_id;
 
-    const limit = filter.limit || 50;
-    const skip = filter.skip || 0;
+      const limit = filter.limit || 50;
+      const skip = filter.skip || 0;
 
-    return this.errorLogModel
-      .find(query)
-      .sort({ created_at: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean()
-      .exec();
+      return this.errorLogModel
+        .find(query)
+        .sort({ created_at: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean()
+        .exec();
+    }
+
+    // If MongoDB is not configured, read from local file
+    try {
+      if (!fs.existsSync(this.logFilePath)) return [];
+      const content = fs.readFileSync(this.logFilePath, 'utf8');
+      const lines = content.trim().split('\n').filter(Boolean);
+      return lines.map((l) => JSON.parse(l)).reverse().slice(0, filter.limit || 50);
+    } catch {
+      return [];
+    }
   }
 }
