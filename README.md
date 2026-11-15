@@ -34,10 +34,17 @@ DATABASE_URL="postgresql://postgres:password@localhost:5432/nestjs_base_dev?sche
 DISABLE_AUTH=false
 ```
 
-### 3. Sync Database (Prisma)
+### 3. Database Setup & Seeding (Prisma)
+Run the following commands to create the tables in PostgreSQL and seed the default Super Administrator user and role:
 ```bash
+# Push schema to database
 npm run prisma:push
+
+# Generate Prisma Client
 npm run prisma:generate
+
+# Seed default Super Admin user and role
+npm run prisma:seed
 ```
 
 ### 4. Start Development Server
@@ -57,11 +64,24 @@ Swagger documentation: [http://localhost:3000/api/docs](http://localhost:3000/ap
 
 ## 🔑 Default Credentials (Development)
 
+Once `npm run prisma:seed` is executed, you can immediately log in with:
+
 | Field | Value |
 |---|---|
 | **Email** | `admin@example.com` |
 | **Password** | `Password123!` |
 | **Role** | Super Administrator (`role_id: 1`) |
+
+---
+
+## 🗄️ Database Commands Reference
+
+| Command | Description |
+|---|---|
+| `npm run prisma:push` | Pushes schema changes directly to PostgreSQL without migration files |
+| `npm run prisma:seed` | Seeds default Super Admin (`admin@example.com`) and default roles |
+| `npm run prisma:generate` | Re-generates Prisma client types |
+| `npm run prisma:studio` | Launches interactive browser GUI on `http://localhost:5555` to view/edit database records |
 
 ---
 
