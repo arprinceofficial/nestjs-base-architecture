@@ -55,6 +55,11 @@ npm run prisma:generate
 npm run start:dev
 ```
 
+To display verbose route mappings on startup during debugging:
+```bash
+DEBUG_ROUTES=true npm run start:dev
+```
+
 The application runs on: `http://localhost:3000`
 
 ---
@@ -98,32 +103,3 @@ npm run postman:export
 Both files are automatically ignored in `.gitignore` to keep your repository clean.
 
 ---
-
-## 📡 API Reference Summary
-
-| Method | Endpoint | Description |
-|---|---|---|
-| **GET / POST** | `/users`, `/users/all` | List users with UserInfo, filters & pagination |
-| **POST** | `/users` | Create user with UserInfo |
-| **GET** | `/users/:id` | Get single user details |
-| **PUT / PATCH** | `/users/:id` | Update user & UserInfo |
-| **DELETE** | `/users/:id` | Soft delete user |
-| **POST** | `/users/restore/:id` | Restore soft-deleted user |
-| **GET / POST** | `/roles`, `/roles/all` | List roles with search, status & pagination |
-| **POST** | `/roles` | Create role |
-| **GET** | `/roles/:id` | Get single role |
-| **PUT / PATCH** | `/roles/:id` | Update role |
-| **DELETE** | `/roles/:id` | Soft delete role |
-| **POST** | `/roles/restore/:id` | Restore soft-deleted role |
-| **GET / POST** | `/role-permissions/show/:id` | Get permission matrix for role |
-| **POST** | `/role-permissions/permission-update/:id` | Bulk update role permissions |
-| **GET** | `/tree-entity/build-menu` | Get nested tree menu hierarchy for admin |
-| **GET / POST** | `/tree-entity/main-menu` | Get filtered navigation menu by role |
-| **POST** | `/tree-entity/update-menu` | Bulk reorder & re-parent menu tree |
-| **POST** | `/tree-entity/delete-menu` | Recursive status update for node & children |
-| **GET / POST** | `/tree-entity`, `/tree-entity/all` | List menu entities |
-| **POST** | `/tree-entity` | Create menu entity |
-| **GET** | `/tree-entity/:id` | Get single menu entity |
-| **PUT / PATCH** | `/tree-entity/:id` | Update menu entity |
-| **DELETE** | `/tree-entity/:id` | Soft delete menu entity |
-| **POST** | `/tree-entity/restore/:id` | Restore soft-deleted menu entity |

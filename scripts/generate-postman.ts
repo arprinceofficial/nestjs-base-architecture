@@ -1,225 +1,436 @@
-import { NestFactory } from '@nestjs/core';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
-import { AppModule } from '../src/app.module';
 
-async function generatePostman() {
-  console.log('🚀 Initializing NestJS application to extract routes...');
-  const app = await NestFactory.create(AppModule, { logger: false });
+function createPostmanRequest(
+  name: string,
+  method: string,
+  urlPath: string,
+  bodyObj?: any,
+  testScript?: string[],
+  pathVariables: { key: string; value: string; description?: string }[] = [],
+  queryParams: { key: string; value: string; description?: string; disabled?: boolean }[] = [],
+) {
+  const pathParts = urlPath
+    .replace(/^\//, '')
+    .split('/')
+    .filter(Boolean)
+    .map((p) => (p.startsWith(':') ? p : p));
 
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('NestJS Base Architecture API')
-    .setDescription('Postman API Collection')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-
-  const openApiDoc = SwaggerModule.createDocument(app, swaggerConfig);
-  await app.close();
-
-  console.log('📦 Converting OpenAPI endpoints to Postman Collection v2.1.0...');
-
-  // Group endpoints by tags (folders)
-  const folders: Record<string, any[]> = {};
-
-  const schemas = openApiDoc.components?.schemas || {};
-
-  function resolveSchemaExample(schemaRefOrObj: any): any {
-    if (!schemaRefOrObj) return {};
-    if (schemaRefOrObj.$ref) {
-      const schemaName = schemaRefOrObj.$ref.replace('#/components/schemas/', '');
-      return resolveSchemaExample(schemas[schemaName]);
-    }
-
-    if (schemaRefOrObj.example !== undefined) {
-      return schemaRefOrObj.example;
-    }
-
-    if (schemaRefOrObj.properties) {
-      const example: Record<string, any> = {};
-      for (const [propKey, propVal] of Object.entries<any>(schemaRefOrObj.properties)) {
-        if (propVal.example !== undefined) {
-          example[propKey] = propVal.example;
-        } else if (propVal.type === 'string') {
-          example[propKey] = propVal.default || 'sample string';
-        } else if (propVal.type === 'number' || propVal.type === 'integer') {
-          example[propKey] = propVal.default !== undefined ? propVal.default : 1;
-        } else if (propVal.type === 'boolean') {
-          example[propKey] = propVal.default !== undefined ? propVal.default : true;
-        } else if (propVal.type === 'array') {
-          example[propKey] = [];
-        } else if (propVal.$ref) {
-          example[propKey] = resolveSchemaExample(propVal);
-        } else {
-          example[propKey] = null;
-        }
-      }
-      return example;
-    }
-
-    return {};
+  const events: any[] = [];
+  if (testScript && testScript.length > 0) {
+    events.push({
+      listen: 'test',
+      script: {
+        type: 'text/javascript',
+        exec: testScript,
+      },
+    });
   }
 
-  // Iterate over paths and methods
-  for (const [pathStr, pathItem] of Object.entries<any>(openApiDoc.paths)) {
-    for (const [method, operation] of Object.entries<any>(pathItem)) {
-      if (['get', 'post', 'put', 'patch', 'delete'].indexOf(method.toLowerCase()) === -1) {
-        continue;
-      }
-
-      const tag = operation.tags?.[0] || 'Default';
-      if (!folders[tag]) {
-        folders[tag] = [];
-      }
-
-      const urlPathParts = pathStr.split('/').filter(Boolean).map((part) => {
-        if (part.startsWith(':') || (part.startsWith('{') && part.endsWith('}'))) {
-          const varName = part.replace(/[:{}]/g, '');
-          return `:${varName}`;
-        }
-        return part;
-      });
-
-      // Postman path variables
-      const pathVariables: any[] = [];
-      const queryParams: any[] = [];
-
-      if (operation.parameters) {
-        for (const param of operation.parameters) {
-          if (param.in === 'path') {
-            pathVariables.push({
-              key: param.name,
-              value: param.example || '1',
-              description: param.description || '',
-            });
-          } else if (param.in === 'query') {
-            queryParams.push({
-              key: param.name,
-              value: param.example !== undefined ? String(param.example) : '',
-              description: param.description || '',
-              disabled: !param.required,
-            });
-          }
-        }
-      }
-
-      // Request Body
-      let requestBody: any = undefined;
-      const content = operation.requestBody?.content;
-      if (content && content['application/json']) {
-        const schema = content['application/json'].schema;
-        const bodyExample = resolveSchemaExample(schema);
-        requestBody = {
-          mode: 'raw',
-          raw: JSON.stringify(bodyExample, null, 2),
-          options: {
-            raw: {
-              language: 'json',
-            },
-          },
-        };
-      }
-
-      // Test Script for Auth / Login or token returning endpoints
-      const event: any[] = [];
-      const isLoginOrAuth =
-        pathStr.toLowerCase().includes('login') ||
-        pathStr.toLowerCase().includes('auth') ||
-        operation.summary?.toLowerCase().includes('login');
-
-      if (isLoginOrAuth) {
-        event.push({
-          listen: 'test',
-          script: {
-            type: 'text/javascript',
-            exec: [
-              'const responseJson = pm.response.json();',
-              'if (responseJson && responseJson.data) {',
-              '    var token = responseJson.data.token || responseJson.data.access_token;',
-              '    var refresh_token = responseJson.data.refresh_token;',
-              '    if (token) {',
-              '        pm.environment.set("admin-token", token);',
-              '    }',
-              '    if (refresh_token) {',
-              '        pm.environment.set("admin-reToken", refresh_token);',
-              '    }',
-              '}',
-            ],
-          },
-        });
-      }
-
-      const postmanItem: any = {
-        name: operation.summary || `${method.toUpperCase()} ${pathStr}`,
-        event,
-        request: {
-          auth: {
-            type: 'bearer',
-            bearer: [
-              {
-                key: 'token',
-                value: '{{admin-token}}',
-                type: 'string',
-              },
-            ],
-          },
-          method: method.toUpperCase(),
-          header: [
-            {
-              key: 'Content-Type',
-              value: 'application/json',
-              type: 'text',
-            },
-            {
-              key: 'Accept',
-              value: 'application/json',
-              type: 'text',
-            },
-          ],
-          url: {
-            raw: `{{host}}${pathStr}`,
-            host: ['{{host}}'],
-            path: urlPathParts,
-            variable: pathVariables,
-            query: queryParams,
-          },
-          description: operation.description || operation.summary || '',
+  const req: any = {
+    auth: {
+      type: 'bearer',
+      bearer: [
+        {
+          key: 'token',
+          value: '{{admin-token}}',
+          type: 'string',
         },
-        response: [],
-      };
+      ],
+    },
+    method: method.toUpperCase(),
+    header: [
+      {
+        key: 'Content-Type',
+        value: 'application/json',
+        type: 'text',
+      },
+      {
+        key: 'Accept',
+        value: 'application/json',
+        type: 'text',
+      },
+    ],
+    url: {
+      raw: `{{host}}/${urlPath.replace(/^\//, '')}`,
+      host: ['{{host}}'],
+      path: pathParts,
+      variable: pathVariables,
+      query: queryParams,
+    },
+  };
 
-      if (requestBody) {
-        postmanItem.request.body = requestBody;
-      }
-
-      folders[tag].push(postmanItem);
-    }
+  if (bodyObj && ['POST', 'PUT', 'PATCH'].includes(method.toUpperCase())) {
+    req.body = {
+      mode: 'raw',
+      raw: JSON.stringify(bodyObj, null, 2),
+      options: {
+        raw: {
+          language: 'json',
+        },
+      },
+    };
   }
 
-  // Construct final Postman Collection
-  const collectionItems = Object.entries(folders).map(([tagName, items]) => ({
-    name: tagName,
-    item: items,
-  }));
+  return {
+    name,
+    event: events,
+    request: req,
+    response: [],
+  };
+}
+
+async function generatePostmanCollection() {
+  console.log('🚀 Generating Postman Collection matching the Accessimate Admin hierarchy...');
+
+  const loginTestScript = [
+    'const responseJson = pm.response.json();',
+    'if (responseJson && responseJson.data) {',
+    '    var token = responseJson.data.token || responseJson.data.access_token;',
+    '    var refresh_token = responseJson.data.refresh_token;',
+    '    if (token) {',
+    '        pm.environment.set("admin-token", token);',
+    '    }',
+    '    if (refresh_token) {',
+    '        pm.environment.set("admin-reToken", refresh_token);',
+    '    }',
+    '}',
+  ];
+
+  // 1. Auth Folder
+  const authItems = [
+    createPostmanRequest(
+      'POST Login',
+      'POST',
+      'api/admin/login',
+      {
+        login_id: 'admin@accessimate.com',
+        password: 'Password123!',
+      },
+      loginTestScript,
+    ),
+    createPostmanRequest('POST Get auth info', 'POST', 'api/admin/user'),
+    createPostmanRequest('POST Refresh Token', 'POST', 'api/admin/refresh-token', {
+      refresh_token: '{{admin-reToken}}',
+    }),
+    createPostmanRequest('POST Logout', 'POST', 'api/admin/logout'),
+    createPostmanRequest('POST Forgot Password', 'POST', 'api/admin/forgot-password', {
+      email: 'admin@accessimate.com',
+    }),
+    createPostmanRequest('POST Otp Verify', 'POST', 'api/admin/otp-verify', {
+      email: 'admin@accessimate.com',
+      otp: '123456',
+    }),
+    createPostmanRequest('POST Otp Resend', 'POST', 'api/admin/otp-resend', {
+      email: 'admin@accessimate.com',
+    }),
+    createPostmanRequest('POST Set password', 'POST', 'api/admin/set-password', {
+      email: 'admin@accessimate.com',
+      token: '123456',
+      password: 'NewPassword123!',
+    }),
+  ];
+
+  // 2. Menu Folder (Tree Entity)
+  const menuItems = [
+    createPostmanRequest(
+      'GET Tree Entity',
+      'GET',
+      'api/admin/tree-entity',
+      undefined,
+      undefined,
+      [],
+      [
+        { key: 'paginate', value: 'true', disabled: true },
+        { key: 'page', value: '1', disabled: true },
+        { key: 'length', value: '15', disabled: true },
+        { key: 'search', value: '', disabled: true },
+      ],
+    ),
+    createPostmanRequest(
+      'GET Tree Entity (tree_entity)',
+      'GET',
+      'api/admin/tree-entity/:id',
+      undefined,
+      undefined,
+      [{ key: 'id', value: '3', description: 'Tree Entity ID' }],
+    ),
+    createPostmanRequest('GET Tree Entity (build-menu)', 'GET', 'api/admin/tree-entity/build-menu'),
+    createPostmanRequest('POST Store', 'POST', 'api/admin/tree-entity', {
+      pid: 0,
+      node_name: 'Content Management',
+      route_name: '/admin/content',
+      route_location: 'admin-content',
+      icon: 'file-text',
+      status: 1,
+      serials: 2,
+    }),
+    createPostmanRequest(
+      'PUT Update',
+      'PUT',
+      'api/admin/tree-entity/:id',
+      {
+        node_name: 'Updated Content Management',
+        icon: 'folder',
+        status: 1,
+      },
+      undefined,
+      [{ key: 'id', value: '3', description: 'Tree Entity ID' }],
+    ),
+    createPostmanRequest('POST Tree Entity (update-menu)', 'POST', 'api/admin/tree-entity/update-menu', [
+      {
+        id: 3,
+        menus: [{ id: 5 }],
+      },
+    ]),
+    createPostmanRequest('POST Tree Entity (delete-menu)', 'POST', 'api/admin/tree-entity/delete-menu', {
+      id: 3,
+      status: 0,
+    }),
+    createPostmanRequest(
+      'DEL Tree Entity (tree_entity)',
+      'DELETE',
+      'api/admin/tree-entity/:id',
+      undefined,
+      undefined,
+      [{ key: 'id', value: '3', description: 'Tree Entity ID' }],
+    ),
+    createPostmanRequest(
+      'POST Tree Entity (Restore delete menu)',
+      'POST',
+      'api/admin/tree-entity/delete-menu',
+      {
+        id: 3,
+        status: 1,
+      },
+    ),
+    createPostmanRequest(
+      'POST Tree Entity (restore id)',
+      'POST',
+      'api/admin/tree-entity/restore/:id',
+      undefined,
+      undefined,
+      [{ key: 'id', value: '3', description: 'Tree Entity ID' }],
+    ),
+    createPostmanRequest('POST Menu', 'POST', 'api/admin/tree-entity/main-menu', {
+      role_id: 1,
+    }),
+  ];
+
+  // 3. Role Folder
+  const roleItems = [
+    createPostmanRequest(
+      'GET Roles',
+      'GET',
+      'api/admin/roles',
+      undefined,
+      undefined,
+      [],
+      [
+        { key: 'paginate', value: 'true', disabled: true },
+        { key: 'page', value: '1', disabled: true },
+        { key: 'length', value: '15', disabled: true },
+        { key: 'search', value: '', disabled: true },
+      ],
+    ),
+    createPostmanRequest('POST Roles (all)', 'POST', 'api/admin/roles/all', {
+      paginate: true,
+      page: 1,
+      length: 15,
+      search: '',
+    }),
+    createPostmanRequest('POST Store', 'POST', 'api/admin/roles', {
+      role_name: 'Manager',
+      status: 1,
+    }),
+    createPostmanRequest(
+      'GET Show',
+      'GET',
+      'api/admin/roles/:id',
+      undefined,
+      undefined,
+      [{ key: 'id', value: '1', description: 'Role ID' }],
+    ),
+    createPostmanRequest(
+      'PUT Update',
+      'PUT',
+      'api/admin/roles/:id',
+      {
+        role_name: 'Executive Manager',
+        status: 1,
+      },
+      undefined,
+      [{ key: 'id', value: '1', description: 'Role ID' }],
+    ),
+    createPostmanRequest(
+      'DEL Destroy',
+      'DELETE',
+      'api/admin/roles/:id',
+      undefined,
+      undefined,
+      [{ key: 'id', value: '1', description: 'Role ID' }],
+    ),
+    createPostmanRequest(
+      'POST Restore',
+      'POST',
+      'api/admin/roles/restore/:id',
+      undefined,
+      undefined,
+      [{ key: 'id', value: '1', description: 'Role ID' }],
+    ),
+  ];
+
+  // 4. Role Permissions Folder
+  const rolePermissionItems = [
+    createPostmanRequest(
+      'GET Show',
+      'GET',
+      'api/admin/role-permissions/show/:id',
+      undefined,
+      undefined,
+      [{ key: 'id', value: '1', description: 'Role ID' }],
+    ),
+    createPostmanRequest(
+      'POST Show (post)',
+      'POST',
+      'api/admin/role-permissions/show/:id',
+      undefined,
+      undefined,
+      [{ key: 'id', value: '1', description: 'Role ID' }],
+    ),
+    createPostmanRequest(
+      'POST Permission Update',
+      'POST',
+      'api/admin/role-permissions/permission-update/:id',
+      {
+        permissions: [
+          { viewP: 3, addP: 3, editP: 3, deleteP: 3 },
+          { viewP: 5, addP: 5, editP: 5, deleteP: 5 },
+        ],
+      },
+      undefined,
+      [{ key: 'id', value: '1', description: 'Role ID' }],
+    ),
+  ];
+
+  // 5. Users Folder
+  const userItems = [
+    createPostmanRequest(
+      'GET Users',
+      'GET',
+      'api/admin/users',
+      undefined,
+      undefined,
+      [],
+      [
+        { key: 'paginate', value: 'true', disabled: true },
+        { key: 'page', value: '1', disabled: true },
+        { key: 'length', value: '15', disabled: true },
+        { key: 'search', value: '', disabled: true },
+        { key: 'role', value: '1', disabled: true },
+      ],
+    ),
+    createPostmanRequest('POST Users (all)', 'POST', 'api/admin/users/all', {
+      paginate: true,
+      page: 1,
+      length: 15,
+      search: '',
+    }),
+    createPostmanRequest('POST Store', 'POST', 'api/admin/users', {
+      mobile: '+8801722222222',
+      ccode: '+880',
+      email: 'staff@accessimate.com',
+      password: 'Password123!',
+      user_type: 1,
+      first_name: 'John',
+      last_name: 'Doe',
+      dob: '1998-01-01',
+      gender: 1,
+      occupation: 'Admin Assistant',
+      pre_city: 'Dhaka',
+      pre_country: 1,
+    }),
+    createPostmanRequest(
+      'GET Show',
+      'GET',
+      'api/admin/users/:id',
+      undefined,
+      undefined,
+      [{ key: 'id', value: '1', description: 'User ID' }],
+    ),
+    createPostmanRequest(
+      'PUT Update',
+      'PUT',
+      'api/admin/users/:id',
+      {
+        first_name: 'Jonathan',
+        occupation: 'Senior Staff',
+      },
+      undefined,
+      [{ key: 'id', value: '1', description: 'User ID' }],
+    ),
+    createPostmanRequest(
+      'DEL Destroy',
+      'DELETE',
+      'api/admin/users/:id',
+      undefined,
+      undefined,
+      [{ key: 'id', value: '1', description: 'User ID' }],
+    ),
+    createPostmanRequest(
+      'POST Restore',
+      'POST',
+      'api/admin/users/restore/:id',
+      undefined,
+      undefined,
+      [{ key: 'id', value: '1', description: 'User ID' }],
+    ),
+  ];
+
+  // Build the complete Accessimate -> Admin tree
+  const adminFolder = {
+    name: 'Admin',
+    item: [
+      {
+        name: 'Auth',
+        item: authItems,
+      },
+      {
+        name: 'Menu',
+        item: menuItems,
+      },
+      {
+        name: 'Role',
+        item: roleItems,
+      },
+      {
+        name: 'Role Permissions',
+        item: rolePermissionItems,
+      },
+      {
+        name: 'Users',
+        item: userItems,
+      },
+    ],
+  };
 
   const postmanCollection = {
     info: {
       _postman_id: randomUUID(),
-      name: 'NestJS Base Architecture Collection',
-      description: 'Auto-generated Postman API Collection for NestJS Base Architecture',
+      name: 'Accessimate',
+      description: 'Accessimate API Collection with Admin hierarchy, Auth, Menu, Role, and Users',
       schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
     },
-    item: collectionItems,
+    item: [adminFolder],
     event: [],
     variable: [],
   };
 
-  // Construct Postman Environment
+  // Environment file matching the screenshot
   const postmanEnvironment = {
     id: randomUUID(),
-    name: 'NestJS Local Environment',
+    name: 'Accessimate Dev',
     values: [
       {
         key: 'host',
@@ -248,7 +459,7 @@ async function generatePostman() {
     ],
     _postman_variable_scope: 'environment',
     _postman_exported_at: new Date().toISOString(),
-    _postman_exported_using: 'NestJS Postman Generator',
+    _postman_exported_using: 'Accessimate Postman Generator',
   };
 
   const outputDir = path.join(__dirname, '..', 'postman');
@@ -256,18 +467,18 @@ async function generatePostman() {
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
-  const collectionPath = path.join(outputDir, 'nestjs_api.postman_collection.json');
-  const envPath = path.join(outputDir, 'nestjs_local.postman_environment.json');
+  const collectionPath = path.join(outputDir, 'accessimate.postman_collection.json');
+  const envPath = path.join(outputDir, 'accessimate.postman_environment.json');
 
   fs.writeFileSync(collectionPath, JSON.stringify(postmanCollection, null, 2));
   fs.writeFileSync(envPath, JSON.stringify(postmanEnvironment, null, 2));
 
-  console.log(`✅ Postman Collection exported to: ${collectionPath}`);
-  console.log(`✅ Postman Environment exported to:  ${envPath}`);
-  console.log('🎉 Done! Import both JSON files into Postman to test immediately.');
+  console.log(`✅ Collection exported to: ${collectionPath}`);
+  console.log(`✅ Environment exported to: ${envPath}`);
+  console.log('🎉 Successfully generated Accessimate / Admin collection structure!');
 }
 
-generatePostman().catch((err) => {
+generatePostmanCollection().catch((err) => {
   console.error('❌ Error generating Postman collection:', err);
   process.exit(1);
 });

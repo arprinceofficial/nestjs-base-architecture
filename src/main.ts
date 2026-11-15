@@ -1,13 +1,32 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, ConsoleLogger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
+class CleanLogger extends ConsoleLogger {
+  log(message: any, context?: string) {
+    // Silence repetitive route mappings and instance loaders unless DEBUG_ROUTES=true
+    if (
+      process.env.DEBUG_ROUTES !== 'true' &&
+      (context === 'RouterExplorer' ||
+        context === 'RoutesResolver' ||
+        context === 'InstanceLoader')
+    ) {
+      return;
+    }
+    super.log(message, context);
+  }
+}
+
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: new CleanLogger(),
+  });
 
   app.enableCors();
+
+  app.setGlobalPrefix('api/admin');
 
   app.useGlobalPipes(
     new ValidationPipe({
