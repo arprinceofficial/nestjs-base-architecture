@@ -21,7 +21,7 @@ A production-ready base backend architecture built with **NestJS**, **Prisma ORM
 
 ### 1. Install Dependencies
 ```bash
-npm install
+pnpm install
 ```
 
 ### 2. Configure Environment
@@ -59,23 +59,23 @@ SMTP_FROM_NAME="NestJS Basement"
 Run the following commands to create the tables in PostgreSQL and seed the default Super Administrator user and role:
 ```bash
 # Push schema to database
-npm run prisma:push
+pnpm prisma:push
 
 # Generate Prisma Client
-npm run prisma:generate
+pnpm prisma:generate
 
 # Seed default Super Admin user and role
-npm run prisma:seed
+pnpm prisma:seed
 ```
 
 ### 4. Start Development Server
 ```bash
-npm run start:dev
+pnpm start:dev
 ```
 
 > **Tip**: To view verbose route mappings on startup during debugging:
 > ```bash
-> DEBUG_ROUTES=true npm run start:dev
+> DEBUG_ROUTES=true pnpm start:dev
 > ```
 
 The API will be available at: `http://localhost:3000/api/v1/admin`  
@@ -85,7 +85,7 @@ Swagger documentation: [http://localhost:3000/api/docs](http://localhost:3000/ap
 
 ## 🔑 Default Credentials (Development)
 
-Once `npm run prisma:seed` is executed, you can immediately log in with:
+Once `pnpm prisma:seed` is executed, you can immediately log in with:
 
 | Field | Value |
 |---|---|
@@ -99,10 +99,10 @@ Once `npm run prisma:seed` is executed, you can immediately log in with:
 
 | Command | Description |
 |---|---|
-| `npm run prisma:push` | Pushes schema changes directly to PostgreSQL without migration files |
-| `npm run prisma:seed` | Seeds default Super Admin (`admin@example.com`) and default roles |
-| `npm run prisma:generate` | Re-generates Prisma client types |
-| `npm run prisma:studio` | Launches interactive browser GUI on `http://localhost:5555` to view/edit database records |
+| `pnpm prisma:push` | Pushes schema changes directly to PostgreSQL without migration files |
+| `pnpm prisma:seed` | Seeds default Super Admin (`admin@example.com`) and default roles |
+| `pnpm prisma:generate` | Re-generates Prisma client types |
+| `pnpm prisma:studio` | Launches interactive browser GUI on `http://localhost:5555` to view/edit database records |
 
 ---
 
@@ -111,7 +111,7 @@ Once `npm run prisma:seed` is executed, you can immediately log in with:
 Export the complete Postman collection and environment with one command:
 
 ```bash
-npm run postman:export
+pnpm postman:export
 ```
 
 - **Collection**: `postman/nestjs_basement.postman_collection.json`
@@ -240,8 +240,8 @@ model Product {
 ```
 Apply schema changes:
 ```bash
-npm run prisma:push
-npm run prisma:generate
+pnpm prisma:push
+pnpm prisma:generate
 ```
 
 ### Step 2: Create Module Files in the Appropriate Domain
@@ -274,20 +274,11 @@ RouterModule.register([
   // ...
 ])
 ```
-    AuthModule,
-    RolesModule,
-    TreeEntitiesModule,
-    UsersModule,
-    ProductsModule, // <-- your new module
-  ],
-})
-export class AppModule {}
-```
 
 ### Step 4: Update Postman Collection
 Run the export script to immediately sync your new endpoints into Postman:
 ```bash
-npm run postman:export
+pnpm postman:export
 ```
 
 ---
@@ -296,14 +287,14 @@ npm run postman:export
 
 ```bash
 # 1. Sync Prisma Client & Database
-npm run prisma:generate
-npm run prisma:push
+pnpm prisma:generate
+pnpm prisma:push
 
 # 2. Compile to production bundle (dist/)
-npm run build
+pnpm build
 
 # 3. Start production server
-npm run start:prod
+pnpm start:prod
 # or directly:
 node dist/main.js
 ```
