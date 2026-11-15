@@ -19,11 +19,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       return true;
     }
 
-    // Optional development bypass: if DISABLE_AUTH is true, allow all requests
-    if (process.env.DISABLE_AUTH === 'true') {
-      return true;
-    }
-
     return super.canActivate(context);
   }
 }

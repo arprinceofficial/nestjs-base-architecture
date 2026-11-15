@@ -39,9 +39,6 @@ DATABASE_URL="postgresql://postgres:password@localhost:5432/nestjs_base_dev?sche
 JWT_SECRET="nestjs-basement-secret-key-1234567890"
 JWT_EXPIRES_IN="24h"
 JWT_REFRESH_EXPIRES_IN="7d"
-
-# Optional: Set to true to bypass authentication during local development
-DISABLE_AUTH=false
 ```
 
 ### 3. Database Setup & Seeding (Prisma)
@@ -111,8 +108,6 @@ npm run postman:export
 2. Select the **`nestjs-basement Dev`** environment.
 3. Send **`Admin > Auth > POST Login`**.
 4. The response script automatically saves `{{admin-token}}` and `{{admin-reToken}}` so all other requests authenticate automatically.
-
-> **Testing without login**: Set `DISABLE_AUTH=true` in `.env` to test endpoints without passing an authorization token.
 
 ---
 
