@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { LoggerModule } from './modules/logger/logger.module';
+import { MailModule } from './modules/mail/mail.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { AuthModule } from './modules/admin/auth/auth.module';
 import { RolesModule } from './modules/admin/roles/roles.module';
@@ -20,6 +21,7 @@ import { CustomerModule } from './modules/customer/customer.module';
       envFilePath: '.env',
     }),
     LoggerModule.register(),
+    MailModule,
     PrismaModule,
     AdminModule,
     CmsModule,

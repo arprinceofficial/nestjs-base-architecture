@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '@/prisma/prisma.service';
+import { MailService } from '@/modules/mail/mail.service';
 import {
   LoginDto,
   ForgotPasswordDto,
@@ -23,6 +24,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly mailService: MailService,
   ) {}
 
   private getJwtExpiresIn(): string {
@@ -250,12 +252,14 @@ export class AuthService {
       },
     });
 
+    // Send email via SMTP if SMTP_ENABLED=true; otherwise skips and retains in DB
+    await this.mailService.sendOtpEmail(dto.email, otp);
+
     return {
       status: true,
       message: 'OTP sent successfully for password reset.',
       data: {
         email: dto.email,
-        otp_mock: process.env.NODE_ENV !== 'production' ? otp : undefined,
       },
     };
   }

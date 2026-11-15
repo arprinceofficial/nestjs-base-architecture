@@ -43,6 +43,16 @@ JWT_REFRESH_EXPIRES_IN="7d"
 
 # MongoDB Logger Configuration
 MONGODB_URI="mongodb://localhost:27017/nestjs_basement_logs"
+
+# SMTP Mail Configuration
+SMTP_ENABLED=false
+SMTP_HOST="smtp.mailtrap.io"
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=""
+SMTP_PASS=""
+SMTP_FROM="noreply@example.com"
+SMTP_FROM_NAME="NestJS Basement"
 ```
 
 ### 3. Database Setup & Seeding (Prisma)
