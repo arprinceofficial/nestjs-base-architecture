@@ -9,7 +9,7 @@ import {
 import { Request, Response } from 'express';
 import { randomUUID } from 'crypto';
 import { ApiMessages } from '../constants/api-messages.constant';
-import { MongoLoggerService } from '../../modules/logger/mongo-logger.service';
+import { MongoLoggerService } from '@/modules/logger/mongo-logger.service';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {

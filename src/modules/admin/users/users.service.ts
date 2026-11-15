@@ -6,12 +6,12 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { PrismaService } from '@/prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { FilterUserDto } from './dto/filter-user.dto';
-import { ApiMessages } from '../../../common/constants/api-messages.constant';
-import { ApiResponse } from '../../../common/interfaces/api-response.interface';
+import { ApiMessages } from '@/common/constants/api-messages.constant';
+import { ApiResponse } from '@/common/interfaces/api-response.interface';
 import { Prisma } from '@prisma/client';
 
 @Injectable()

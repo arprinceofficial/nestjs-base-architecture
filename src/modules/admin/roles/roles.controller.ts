@@ -16,7 +16,7 @@ import { ApiTags, ApiOperation, ApiResponse as SwaggerResponse } from '@nestjs/s
 import { RolesService } from './roles.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
-import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
+import { PaginationQueryDto } from '@/common/dto/pagination-query.dto';
 
 @ApiTags('Admin - Roles')
 @Controller('roles')

@@ -4,14 +4,14 @@ import {
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { PrismaService } from '@/prisma/prisma.service';
 import { CreateTreeEntityDto } from './dto/create-tree-entity.dto';
 import { UpdateTreeEntityDto } from './dto/update-tree-entity.dto';
 import { DeleteMenuDto } from './dto/delete-menu.dto';
-import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
-import { parseJsonArray, MenuTreeNode } from '../../../common/utils/helper.util';
-import { ApiMessages } from '../../../common/constants/api-messages.constant';
-import { ApiResponse } from '../../../common/interfaces/api-response.interface';
+import { PaginationQueryDto } from '@/common/dto/pagination-query.dto';
+import { parseJsonArray, MenuTreeNode } from '@/common/utils/helper.util';
+import { ApiMessages } from '@/common/constants/api-messages.constant';
+import { ApiResponse } from '@/common/interfaces/api-response.interface';
 import { Prisma } from '@prisma/client';
 
 @Injectable()

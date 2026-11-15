@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ApiResponse } from '../../common/interfaces/api-response.interface';
+import { ApiResponse } from '@/common/interfaces/api-response.interface';
 
 @Injectable()
 export class CustomerService {
