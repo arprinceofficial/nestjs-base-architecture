@@ -51,8 +51,11 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Logout' })
-  logout() {
-    return this.authService.logout();
+  logout(@Request() req: any) {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.replace(/^Bearer\s+/i, '');
+    const userId = req.user?.id;
+    return this.authService.logout(token, userId);
   }
 
   @Public()

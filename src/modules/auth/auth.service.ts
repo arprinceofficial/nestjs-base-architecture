@@ -153,7 +153,18 @@ export class AuthService {
     }
   }
 
-  async logout(): Promise<ApiResponse> {
+  async logout(token?: string, userId?: number): Promise<ApiResponse> {
+    if (token) {
+      await this.prisma.revokedToken.upsert({
+        where: { token },
+        update: {},
+        create: {
+          token,
+          user_id: userId || null,
+        },
+      });
+    }
+
     return {
       status: true,
       message: 'Logged out successfully.',

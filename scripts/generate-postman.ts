@@ -98,6 +98,11 @@ async function generatePostmanCollection() {
     '}',
   ];
 
+  const logoutTestScript = [
+    'pm.environment.unset("admin-token");',
+    'pm.environment.unset("admin-reToken");',
+  ];
+
   // 1. Auth Folder
   const authItems = [
     createPostmanRequest(
@@ -114,7 +119,13 @@ async function generatePostmanCollection() {
     createPostmanRequest('POST Refresh Token', 'POST', 'api/admin/refresh-token', {
       refresh_token: '{{admin-reToken}}',
     }),
-    createPostmanRequest('POST Logout', 'POST', 'api/admin/logout'),
+    createPostmanRequest(
+      'POST Logout',
+      'POST',
+      'api/admin/logout',
+      undefined,
+      logoutTestScript,
+    ),
     createPostmanRequest('POST Forgot Password', 'POST', 'api/admin/forgot-password', {
       email: 'admin@example.com',
     }),

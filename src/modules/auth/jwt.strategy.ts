@@ -10,10 +10,24 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: process.env.JWT_SECRET || 'nestjs-basement-secret-key-1234567890',
+      passReqToCallback: true,
     });
   }
 
-  async validate(payload: any) {
+  async validate(req: any, payload: any) {
+    const rawToken = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
+    if (rawToken) {
+      const isRevoked = await this.prisma.revokedToken.findUnique({
+        where: { token: rawToken },
+      });
+      if (isRevoked) {
+        throw new UnauthorizedException({
+          status: false,
+          message: 'Token has been revoked or user logged out. Please log in again.',
+        });
+      }
+    }
+
     const user = await this.prisma.user.findFirst({
       where: { id: payload.sub },
       include: { userInfo: true, role: true },
