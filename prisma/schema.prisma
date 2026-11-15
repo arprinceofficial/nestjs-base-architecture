@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  id          Int              @id @default(autoincrement())
+  role_name   String           @unique @map("role_name")
+  status      Int              @default(1)
+  created_by  Int?             @map("created_by")
+  modified_by Int?             @map("modified_by")
+  created_at  DateTime         @default(now()) @map("created_at")
+  updated_at  DateTime         @updatedAt @map("updated_at")
+  deleted_at  DateTime?        @map("deleted_at")
+  permissions RolePermission[]
+  users       User[]
+
+  @@map("roles")
+}
+
+model RolePermission {
+  id           Int       @id @default(autoincrement())
+  role_id      Int?      @map("role_id")
+  view         Int       @default(0)
+  add          Int       @default(0)
+  edit         Int       @default(0)
+  edit_other   Int       @default(0) @map("edit_other")
+  delete       Int       @default(0)
+  delete_other Int       @default(0) @map("delete_other")
+  created_by   Int?      @map("created_by")
+  modified_by  Int?      @map("modified_by")
+  created_at   DateTime  @default(now()) @map("created_at")
+  updated_at   DateTime  @updatedAt @map("updated_at")
+  deleted_at   DateTime? @map("deleted_at")
+  role         Role?     @relation(fields: [role_id], references: [id], onDelete: Cascade)
+
+  @@index([role_id])
+  @@map("role_permissions")
+}
+
+model TreeEntity {
+  id             Int          @id @default(autoincrement())
+  pid            Int?         @default(0)
+  node_name      String       @unique @map("node_name")
+  route_name     String?      @map("route_name")
+  route_location String?      @map("route_location")
+  icon           String?
+  status         Int          @default(1)
+  serials        Int?
+  created_by     Int?         @map("created_by")
+  modified_by    Int?         @map("modified_by")
+  created_at     DateTime     @default(now()) @map("created_at")
+  updated_at     DateTime     @updatedAt @map("updated_at")
+  deleted_at     DateTime?    @map("deleted_at")
+  parent         TreeEntity?  @relation("MenuTree", fields: [pid], references: [id], onDelete: SetNull)
+  menus          TreeEntity[] @relation("MenuTree")
+
+  @@index([pid])
+  @@map("tree_entities")
+}
+
+model User {
+  id                 Int       @id @default(autoincrement())
+  uid                String    @default(uuid())
+  mobile             String?   @unique
+  ccode              String?
+  email              String?   @unique
+  password           String?
+  auth_code          String?   @map("auth_code")
+  otp_expires_at     DateTime? @map("otp_expires_at")
+  is_verify          Int       @default(0) @map("is_verify")
+  status             Int       @default(1)
+  mobile_verified_at DateTime? @map("mobile_verified_at")
+  email_verified_at  DateTime? @map("email_verified_at")
+  user_type          Int       @default(1) @map("user_type")
+  otp_for            String?   @map("otp_for")
+  photo              String?
+  created_at         DateTime  @default(now()) @map("created_at")
+  updated_at         DateTime  @updatedAt @map("updated_at")
+  userInfo           UserInfo?
+  role               Role?     @relation(fields: [user_type], references: [id])
+
+  @@index([user_type])
+  @@map("users")
+}
+
+model UserInfo {
+  id                      Int       @id @default(autoincrement())
+  user_id                 Int?      @unique @map("user_id")
+  first_name              String?   @map("first_name")
+  middle_name             String?   @map("middle_name")
+  last_name               String?   @map("last_name")
+  photo                   String?
+  dob                     DateTime?
+  religion_id             Int?      @map("religion_id")
+  gender                  Int?
+  occupation              String?
+  nationality_id          Int?      @map("nationality_id")
+  vulnerability_info      Json?     @map("vulnerability_info")
+  pre_country             Int?      @map("pre_country")
+  pre_srteet_address      String?   @map("pre_srteet_address")
+  pre_city                String?   @map("pre_city")
+  pre_provience           String?   @map("pre_provience")
+  pre_zip                 String?   @map("pre_zip")
+  same_as_present_address Int?      @default(1) @map("same_as_present_address")
+  per_country             Int?      @map("per_country")
+  per_srteet_address      String?   @map("per_srteet_address")
+  per_city                String?   @map("per_city")
+  per_provience           String?   @map("per_provience")
+  per_zip                 String?   @map("per_zip")
+  created_by              Int?      @map("created_by")
+  modified_by             Int?      @map("modified_by")
+  created_at              DateTime  @default(now()) @map("created_at")
+  updated_at              DateTime  @updatedAt @map("updated_at")
+  deleted_at              DateTime? @map("deleted_at")
+  user                    User?     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("user_infos")
+}
