@@ -123,11 +123,13 @@ model UserInfo {
 }
 
 model RevokedToken {
-  id         Int      @id @default(autoincrement())
-  token      String   @unique @db.Text
-  user_id    Int?     @map("user_id")
-  created_at DateTime @default(now()) @map("created_at")
+  id         Int       @id @default(autoincrement())
+  token      String    @unique @db.Text
+  user_id    Int?      @map("user_id")
+  expires_at DateTime? @map("expires_at")
+  created_at DateTime  @default(now()) @map("created_at")
 
+  @@index([expires_at])
   @@map("revoked_tokens")
 }
 

@@ -24,11 +24,21 @@ npm install
 ```
 
 ### 2. Configure Environment
-Create or edit `.env` in the root directory:
+Copy `.env.example` to create `.env` in the root directory:
+```bash
+cp .env.example .env
+```
+
+Review or customize your `.env` settings:
 ```env
 PORT=3000
 NODE_ENV=development
 DATABASE_URL="postgresql://postgres:password@localhost:5432/nestjs_base_dev?schema=public"
+
+# Authentication & JWT Configuration
+JWT_SECRET="nestjs-basement-secret-key-1234567890"
+JWT_EXPIRES_IN="24h"
+JWT_REFRESH_EXPIRES_IN="7d"
 
 # Optional: Set to true to bypass authentication during local development
 DISABLE_AUTH=false
