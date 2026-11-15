@@ -65,6 +65,40 @@ Once started, explore and test all APIs interactively via Swagger UI:
 
 ---
 
+## 📮 Postman Collection & Environment Export
+
+To generate the Postman Collection and Environment files automatically for all registered APIs:
+
+```bash
+npm run postman:export
+```
+
+### What this command generates:
+1. **`postman/nestjs_api.postman_collection.json`**:
+   - Organizes endpoints into folders (`Users`, `Roles`, `Role Permissions`, `Menu Setup (Tree Entity)`).
+   - Pre-configures `Bearer {{admin-token}}` for all requests.
+   - Includes sample request payloads and parameter definitions.
+   - Automatically attaches a Post-response script to any Auth/Login endpoints to capture and store the token:
+     ```javascript
+     const responseJson = pm.response.json();
+     if (responseJson && responseJson.data) {
+         var token = responseJson.data.token || responseJson.data.access_token;
+         var refresh_token = responseJson.data.refresh_token;
+         if (token) {
+             pm.environment.set("admin-token", token);
+         }
+         if (refresh_token) {
+             pm.environment.set("admin-reToken", refresh_token);
+         }
+     }
+     ```
+2. **`postman/nestjs_local.postman_environment.json`**:
+   - Pre-configured variables: `host` (`http://localhost:3000`), `base_url`, `admin-token`, and `admin-reToken`.
+
+Both files are automatically ignored in `.gitignore` to keep your repository clean.
+
+---
+
 ## 📡 API Reference Summary
 
 | Method | Endpoint | Description |
