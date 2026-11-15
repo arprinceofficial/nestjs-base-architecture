@@ -1,8 +1,9 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, ConsoleLogger } from '@nestjs/common';
+import { ValidationPipe, ConsoleLogger, VersioningType } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { MongoLoggerService } from './modules/logger/mongo-logger.service';
 
 class CleanLogger extends ConsoleLogger {
   log(message: any, context?: string) {
@@ -26,7 +27,13 @@ async function bootstrap() {
 
   app.enableCors();
 
-  app.setGlobalPrefix('api/admin');
+  app.setGlobalPrefix('api');
+
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: '1',
+    prefix: 'v',
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -39,7 +46,8 @@ async function bootstrap() {
     }),
   );
 
-  app.useGlobalFilters(new AllExceptionsFilter());
+  const mongoLogger = app.get(MongoLoggerService);
+  app.useGlobalFilters(new AllExceptionsFilter(mongoLogger));
 
   // Setup Swagger Documentation
   const swaggerConfig = new DocumentBuilder()

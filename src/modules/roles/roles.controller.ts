@@ -19,7 +19,7 @@ import { UpdateRoleDto } from './dto/update-role.dto';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 
 @ApiTags('Roles')
-@Controller('roles')
+@Controller('admin/roles')
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 

@@ -20,7 +20,7 @@ import { Public } from './decorators/public.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @ApiTags('Auth')
-@Controller()
+@Controller('admin')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

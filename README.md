@@ -11,6 +11,7 @@ A production-ready base backend architecture built with **NestJS**, **Prisma ORM
 - **🛡️ Role-Based Access Control (RBAC)**: Manage roles and dynamic permissions (`view`, `add`, `edit`, `delete`) per menu item.
 - **🌳 Dynamic Menu Setup (Tree Entity)**: Self-referencing hierarchical menu trees with re-ordering, cascading status updates, and role-based menu filtering.
 - **📦 Uniform API Response**: Consistent `{ status, message, data }` JSON envelope with global exception handling and validation pipes.
+- **🪵 MongoDB Error Tracking Logger**: Global exception filter captures all runtime and HTTP errors into MongoDB (`error_logs` collection) with unique `error_id`, stack traces, sanitized payloads, and user context.
 - **📮 Auto Postman Collection**: One-click CLI command to export organized Postman collections and environments with token-storing test scripts.
 - **📑 OpenAPI / Swagger**: Built-in interactive API documentation at `/api/docs`.
 
@@ -39,6 +40,9 @@ DATABASE_URL="postgresql://postgres:password@localhost:5432/nestjs_base_dev?sche
 JWT_SECRET="nestjs-basement-secret-key-1234567890"
 JWT_EXPIRES_IN="24h"
 JWT_REFRESH_EXPIRES_IN="7d"
+
+# MongoDB Logger Configuration
+MONGODB_URI="mongodb://localhost:27017/nestjs_basement_logs"
 ```
 
 ### 3. Database Setup & Seeding (Prisma)
@@ -64,7 +68,7 @@ npm run start:dev
 > DEBUG_ROUTES=true npm run start:dev
 > ```
 
-The API will be available at: `http://localhost:3000/api/admin`  
+The API will be available at: `http://localhost:3000/api/v1/admin`  
 Swagger documentation: [http://localhost:3000/api/docs](http://localhost:3000/api/docs)
 
 ---
@@ -111,6 +115,33 @@ npm run postman:export
 
 ---
 
+## 🪵 Centralized Error Tracking (MongoDB)
+
+All application errors, unhandled exceptions, and rejected requests are automatically captured by the global exception filter and persisted to **MongoDB** in the `error_logs` collection.
+
+### Error Response Envelope
+Every failed API call returns a unique tracking `error_id`:
+```json
+{
+  "status": false,
+  "message": "Invalid credentials",
+  "error_id": "ERR-5D8CEE0C"
+}
+```
+
+### Stored Error Data
+Each log entry in MongoDB includes:
+- `error_id`: Unique reference code returned to the client for instant debugging
+- `status_code`: HTTP status code (400, 401, 404, 500, etc.)
+- `message` & `error_name`: Exception type and descriptive message
+- `stack`: Complete trace stack for pinpoint debugging
+- `path` & `method`: Target endpoint URL and HTTP verb
+- `user_id` & `user_email`: Authenticated user identity (if available)
+- `ip` & `user_agent`: Client network metadata
+- `body` & `headers`: Auto-sanitized request payloads (passwords, tokens, and authorization credentials are automatically redacted)
+
+---
+
 ## 🛠️ How to Extend this Project (Developer Instructions)
 
 When adding a new feature or module to this architecture:
@@ -138,7 +169,7 @@ npm run prisma:generate
 Create your module under `src/modules/<feature-name>/`:
 - `dto/`: Request validation classes using `class-validator` and `@nestjs/swagger`.
 - `<feature>.service.ts`: Business logic utilizing `PrismaService`.
-- `<feature>.controller.ts`: Route definitions with `@Controller('feature-name')`.
+- `<feature>.controller.ts`: Route definitions with `@Controller('admin/feature-name')` (automatically mapped to `/api/v1/admin/feature-name`).
 - `<feature>.module.ts`: NestJS module declaration.
 
 ### Step 3: Register in App Module

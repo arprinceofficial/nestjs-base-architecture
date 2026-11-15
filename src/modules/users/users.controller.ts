@@ -19,7 +19,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { FilterUserDto } from './dto/filter-user.dto';
 
 @ApiTags('Users')
-@Controller('users')
+@Controller('admin/users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 

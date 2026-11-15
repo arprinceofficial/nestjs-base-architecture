@@ -108,35 +108,35 @@ async function generatePostmanCollection() {
     createPostmanRequest(
       'POST Login',
       'POST',
-      'api/admin/login',
+      'api/v1/admin/login',
       {
         login_id: 'admin@example.com',
         password: 'Password123!',
       },
       loginTestScript,
     ),
-    createPostmanRequest('POST Get auth info', 'POST', 'api/admin/user'),
-    createPostmanRequest('POST Refresh Token', 'POST', 'api/admin/refresh-token', {
+    createPostmanRequest('POST Get auth info', 'POST', 'api/v1/admin/user'),
+    createPostmanRequest('POST Refresh Token', 'POST', 'api/v1/admin/refresh-token', {
       refresh_token: '{{admin-reToken}}',
     }),
     createPostmanRequest(
       'POST Logout',
       'POST',
-      'api/admin/logout',
+      'api/v1/admin/logout',
       undefined,
       logoutTestScript,
     ),
-    createPostmanRequest('POST Forgot Password', 'POST', 'api/admin/forgot-password', {
+    createPostmanRequest('POST Forgot Password', 'POST', 'api/v1/admin/forgot-password', {
       email: 'admin@example.com',
     }),
-    createPostmanRequest('POST Otp Verify', 'POST', 'api/admin/otp-verify', {
+    createPostmanRequest('POST Otp Verify', 'POST', 'api/v1/admin/otp-verify', {
       email: 'admin@example.com',
       otp: '123456',
     }),
-    createPostmanRequest('POST Otp Resend', 'POST', 'api/admin/otp-resend', {
+    createPostmanRequest('POST Otp Resend', 'POST', 'api/v1/admin/otp-resend', {
       email: 'admin@example.com',
     }),
-    createPostmanRequest('POST Set password', 'POST', 'api/admin/set-password', {
+    createPostmanRequest('POST Set password', 'POST', 'api/v1/admin/set-password', {
       email: 'admin@example.com',
       token: '123456',
       password: 'NewPassword123!',
@@ -148,7 +148,7 @@ async function generatePostmanCollection() {
     createPostmanRequest(
       'GET Tree Entity',
       'GET',
-      'api/admin/tree-entity',
+      'api/v1/admin/tree-entity',
       undefined,
       undefined,
       [],
@@ -162,13 +162,13 @@ async function generatePostmanCollection() {
     createPostmanRequest(
       'GET Tree Entity (tree_entity)',
       'GET',
-      'api/admin/tree-entity/:id',
+      'api/v1/admin/tree-entity/:id',
       undefined,
       undefined,
       [{ key: 'id', value: '3', description: 'Tree Entity ID' }],
     ),
-    createPostmanRequest('GET Tree Entity (build-menu)', 'GET', 'api/admin/tree-entity/build-menu'),
-    createPostmanRequest('POST Store', 'POST', 'api/admin/tree-entity', {
+    createPostmanRequest('GET Tree Entity (build-menu)', 'GET', 'api/v1/admin/tree-entity/build-menu'),
+    createPostmanRequest('POST Store', 'POST', 'api/v1/admin/tree-entity', {
       pid: 0,
       node_name: 'Content Management',
       route_name: '/admin/content',
@@ -180,7 +180,7 @@ async function generatePostmanCollection() {
     createPostmanRequest(
       'PUT Update',
       'PUT',
-      'api/admin/tree-entity/:id',
+      'api/v1/admin/tree-entity/:id',
       {
         node_name: 'Updated Content Management',
         icon: 'folder',
@@ -189,20 +189,20 @@ async function generatePostmanCollection() {
       undefined,
       [{ key: 'id', value: '3', description: 'Tree Entity ID' }],
     ),
-    createPostmanRequest('POST Tree Entity (update-menu)', 'POST', 'api/admin/tree-entity/update-menu', [
+    createPostmanRequest('POST Tree Entity (update-menu)', 'POST', 'api/v1/admin/tree-entity/update-menu', [
       {
         id: 3,
         menus: [{ id: 5 }],
       },
     ]),
-    createPostmanRequest('POST Tree Entity (delete-menu)', 'POST', 'api/admin/tree-entity/delete-menu', {
+    createPostmanRequest('POST Tree Entity (delete-menu)', 'POST', 'api/v1/admin/tree-entity/delete-menu', {
       id: 3,
       status: 0,
     }),
     createPostmanRequest(
       'DEL Tree Entity (tree_entity)',
       'DELETE',
-      'api/admin/tree-entity/:id',
+      'api/v1/admin/tree-entity/:id',
       undefined,
       undefined,
       [{ key: 'id', value: '3', description: 'Tree Entity ID' }],
@@ -210,7 +210,7 @@ async function generatePostmanCollection() {
     createPostmanRequest(
       'POST Tree Entity (Restore delete menu)',
       'POST',
-      'api/admin/tree-entity/delete-menu',
+      'api/v1/admin/tree-entity/delete-menu',
       {
         id: 3,
         status: 1,
@@ -219,12 +219,12 @@ async function generatePostmanCollection() {
     createPostmanRequest(
       'POST Tree Entity (restore id)',
       'POST',
-      'api/admin/tree-entity/restore/:id',
+      'api/v1/admin/tree-entity/restore/:id',
       undefined,
       undefined,
       [{ key: 'id', value: '3', description: 'Tree Entity ID' }],
     ),
-    createPostmanRequest('POST Menu', 'POST', 'api/admin/tree-entity/main-menu', {
+    createPostmanRequest('POST Menu', 'POST', 'api/v1/admin/tree-entity/main-menu', {
       role_id: 1,
     }),
   ];
@@ -234,7 +234,7 @@ async function generatePostmanCollection() {
     createPostmanRequest(
       'GET Roles',
       'GET',
-      'api/admin/roles',
+      'api/v1/admin/roles',
       undefined,
       undefined,
       [],
@@ -245,20 +245,20 @@ async function generatePostmanCollection() {
         { key: 'search', value: '', disabled: true },
       ],
     ),
-    createPostmanRequest('POST Roles (all)', 'POST', 'api/admin/roles/all', {
+    createPostmanRequest('POST Roles (all)', 'POST', 'api/v1/admin/roles/all', {
       paginate: true,
       page: 1,
       length: 15,
       search: '',
     }),
-    createPostmanRequest('POST Store', 'POST', 'api/admin/roles', {
+    createPostmanRequest('POST Store', 'POST', 'api/v1/admin/roles', {
       role_name: 'Manager',
       status: 1,
     }),
     createPostmanRequest(
       'GET Show',
       'GET',
-      'api/admin/roles/:id',
+      'api/v1/admin/roles/:id',
       undefined,
       undefined,
       [{ key: 'id', value: '1', description: 'Role ID' }],
@@ -266,7 +266,7 @@ async function generatePostmanCollection() {
     createPostmanRequest(
       'PUT Update',
       'PUT',
-      'api/admin/roles/:id',
+      'api/v1/admin/roles/:id',
       {
         role_name: 'Executive Manager',
         status: 1,
@@ -277,7 +277,7 @@ async function generatePostmanCollection() {
     createPostmanRequest(
       'DEL Destroy',
       'DELETE',
-      'api/admin/roles/:id',
+      'api/v1/admin/roles/:id',
       undefined,
       undefined,
       [{ key: 'id', value: '1', description: 'Role ID' }],
@@ -285,7 +285,7 @@ async function generatePostmanCollection() {
     createPostmanRequest(
       'POST Restore',
       'POST',
-      'api/admin/roles/restore/:id',
+      'api/v1/admin/roles/restore/:id',
       undefined,
       undefined,
       [{ key: 'id', value: '1', description: 'Role ID' }],
@@ -297,7 +297,7 @@ async function generatePostmanCollection() {
     createPostmanRequest(
       'GET Show',
       'GET',
-      'api/admin/role-permissions/show/:id',
+      'api/v1/admin/role-permissions/show/:id',
       undefined,
       undefined,
       [{ key: 'id', value: '1', description: 'Role ID' }],
@@ -305,7 +305,7 @@ async function generatePostmanCollection() {
     createPostmanRequest(
       'POST Show (post)',
       'POST',
-      'api/admin/role-permissions/show/:id',
+      'api/v1/admin/role-permissions/show/:id',
       undefined,
       undefined,
       [{ key: 'id', value: '1', description: 'Role ID' }],
@@ -313,7 +313,7 @@ async function generatePostmanCollection() {
     createPostmanRequest(
       'POST Permission Update',
       'POST',
-      'api/admin/role-permissions/permission-update/:id',
+      'api/v1/admin/role-permissions/permission-update/:id',
       {
         permissions: [
           { viewP: 3, addP: 3, editP: 3, deleteP: 3 },
@@ -330,7 +330,7 @@ async function generatePostmanCollection() {
     createPostmanRequest(
       'GET Users',
       'GET',
-      'api/admin/users',
+      'api/v1/admin/users',
       undefined,
       undefined,
       [],
@@ -342,13 +342,13 @@ async function generatePostmanCollection() {
         { key: 'role', value: '1', disabled: true },
       ],
     ),
-    createPostmanRequest('POST Users (all)', 'POST', 'api/admin/users/all', {
+    createPostmanRequest('POST Users (all)', 'POST', 'api/v1/admin/users/all', {
       paginate: true,
       page: 1,
       length: 15,
       search: '',
     }),
-    createPostmanRequest('POST Store', 'POST', 'api/admin/users', {
+    createPostmanRequest('POST Store', 'POST', 'api/v1/admin/users', {
       mobile: '+8801722222222',
       ccode: '+880',
       email: 'staff@example.com',
@@ -365,7 +365,7 @@ async function generatePostmanCollection() {
     createPostmanRequest(
       'GET Show',
       'GET',
-      'api/admin/users/:id',
+      'api/v1/admin/users/:id',
       undefined,
       undefined,
       [{ key: 'id', value: '1', description: 'User ID' }],
@@ -373,7 +373,7 @@ async function generatePostmanCollection() {
     createPostmanRequest(
       'PUT Update',
       'PUT',
-      'api/admin/users/:id',
+      'api/v1/admin/users/:id',
       {
         first_name: 'Jonathan',
         occupation: 'Senior Staff',
@@ -384,7 +384,7 @@ async function generatePostmanCollection() {
     createPostmanRequest(
       'DEL Destroy',
       'DELETE',
-      'api/admin/users/:id',
+      'api/v1/admin/users/:id',
       undefined,
       undefined,
       [{ key: 'id', value: '1', description: 'User ID' }],
@@ -392,7 +392,7 @@ async function generatePostmanCollection() {
     createPostmanRequest(
       'POST Restore',
       'POST',
-      'api/admin/users/restore/:id',
+      'api/v1/admin/users/restore/:id',
       undefined,
       undefined,
       [{ key: 'id', value: '1', description: 'User ID' }],

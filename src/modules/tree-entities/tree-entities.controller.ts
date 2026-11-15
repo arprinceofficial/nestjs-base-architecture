@@ -20,7 +20,7 @@ import { DeleteMenuDto } from './dto/delete-menu.dto';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 
 @ApiTags('Menu Setup (Tree Entity)')
-@Controller('tree-entity')
+@Controller('admin/tree-entity')
 export class TreeEntitiesController {
   constructor(private readonly treeEntitiesService: TreeEntitiesService) {}
 

@@ -13,7 +13,7 @@ import { RolesService } from './roles.service';
 import { UpdateRolePermissionsDto } from './dto/update-role-permissions.dto';
 
 @ApiTags('Role Permissions')
-@Controller('role-permissions')
+@Controller('admin/role-permissions')
 export class RolePermissionsController {
   constructor(private readonly rolesService: RolesService) {}
 
