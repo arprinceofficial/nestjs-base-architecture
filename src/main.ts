@@ -43,9 +43,9 @@ async function bootstrap() {
 
   // Setup Swagger Documentation
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('NestJS Base Architecture API')
+    .setTitle('NestJS Basement API')
     .setDescription(
-      'Enterprise NestJS REST API with business logic from Laravel: User, Role, Role Permission, and Menu Setup (Tree Entity)',
+      'Enterprise NestJS REST API: User, Role, Role Permission, and Menu Setup (Tree Entity)',
     )
     .setVersion('1.0')
     .addBearerAuth()

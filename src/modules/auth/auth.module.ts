@@ -11,7 +11,7 @@ import { APP_GUARD } from '@nestjs/core';
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'accessimate-secret-key-1234567890',
+      secret: process.env.JWT_SECRET || 'nestjs-basement-secret-key-1234567890',
       signOptions: { expiresIn: '24h' },
     }),
   ],

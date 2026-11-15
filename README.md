@@ -1,6 +1,6 @@
-# NestJS Base Architecture API
+# NestJS Basement API
 
-A scalable enterprise NestJS backend with **Prisma ORM** and **PostgreSQL**, engineered with the business logic migrated from the Laravel `accesimate-api` codebase.
+A scalable enterprise NestJS backend with **Prisma ORM** and **PostgreSQL**, engineered with modular architecture for Users, Roles, Role Permissions, and Menu Setup (Tree Entities).
 
 ---
 
@@ -62,6 +62,37 @@ DEBUG_ROUTES=true npm run start:dev
 
 The application runs on: `http://localhost:3000`
 
+### 4. Production Build & Deployment
+
+```bash
+# 1. Generate Prisma Client & Sync Database
+npm run prisma:generate
+npm run prisma:push
+
+# 2. Compile TypeScript to production bundle (dist/)
+npm run build
+
+# 3. Start production server
+npm run start:prod
+# or directly:
+node dist/main.js
+```
+
+#### Running with PM2 (Recommended for Production)
+```bash
+# Start background process
+pm2 start dist/main.js --name "nestjs-basement"
+
+# Check status
+pm2 status
+
+# View live logs
+pm2 logs nestjs-basement
+
+# Restart
+pm2 restart nestjs-basement
+```
+
 ---
 
 ## 📖 Swagger Interactive Documentation
@@ -79,11 +110,11 @@ npm run postman:export
 ```
 
 ### What this command generates:
-1. **`postman/nestjs_api.postman_collection.json`**:
-   - Organizes endpoints into folders (`Users`, `Roles`, `Role Permissions`, `Menu Setup (Tree Entity)`).
+1. **`postman/nestjs_basement.postman_collection.json`**:
+   - Organizes endpoints hierarchically: `Admin` -> `Auth`, `Menu`, `Role`, `Role Permissions`, `Users`.
    - Pre-configures `Bearer {{admin-token}}` for all requests.
    - Includes sample request payloads and parameter definitions.
-   - Automatically attaches a Post-response script to any Auth/Login endpoints to capture and store the token:
+   - Automatically attaches a Post-response script to Auth/Login endpoints to capture and store the token:
      ```javascript
      const responseJson = pm.response.json();
      if (responseJson && responseJson.data) {
@@ -97,7 +128,7 @@ npm run postman:export
          }
      }
      ```
-2. **`postman/nestjs_local.postman_environment.json`**:
+2. **`postman/nestjs_basement.postman_environment.json`**:
    - Pre-configured variables: `host` (`http://localhost:3000`), `base_url`, `admin-token`, and `admin-reToken`.
 
 Both files are automatically ignored in `.gitignore` to keep your repository clean.

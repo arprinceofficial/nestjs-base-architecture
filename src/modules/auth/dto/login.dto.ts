@@ -2,7 +2,7 @@ import { IsNotEmpty, IsString, IsOptional } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class LoginDto {
-  @ApiProperty({ description: 'Email or Mobile number', example: 'admin@accessimate.com' })
+  @ApiProperty({ description: 'Email or Mobile number', example: 'admin@example.com' })
   @IsNotEmpty({ message: 'Login ID (email or mobile) is required' })
   @IsString()
   login_id: string;
@@ -26,14 +26,14 @@ export class RefreshTokenDto {
 }
 
 export class ForgotPasswordDto {
-  @ApiProperty({ description: 'Email address', example: 'admin@accessimate.com' })
+  @ApiProperty({ description: 'Email address', example: 'admin@example.com' })
   @IsNotEmpty({ message: 'Email is required' })
   @IsString()
   email: string;
 }
 
 export class OtpVerifyDto {
-  @ApiProperty({ description: 'Email address', example: 'admin@accessimate.com' })
+  @ApiProperty({ description: 'Email address', example: 'admin@example.com' })
   @IsNotEmpty()
   @IsString()
   email: string;
@@ -45,7 +45,7 @@ export class OtpVerifyDto {
 }
 
 export class SetNewPasswordDto {
-  @ApiProperty({ description: 'Email address', example: 'admin@accessimate.com' })
+  @ApiProperty({ description: 'Email address', example: 'admin@example.com' })
   @IsNotEmpty()
   @IsString()
   email: string;

@@ -82,7 +82,7 @@ function createPostmanRequest(
 }
 
 async function generatePostmanCollection() {
-  console.log('🚀 Generating Postman Collection matching the Accessimate Admin hierarchy...');
+  console.log('🚀 Generating Postman Collection matching the nestjs-basement Admin hierarchy...');
 
   const loginTestScript = [
     'const responseJson = pm.response.json();',
@@ -105,7 +105,7 @@ async function generatePostmanCollection() {
       'POST',
       'api/admin/login',
       {
-        login_id: 'admin@accessimate.com',
+        login_id: 'admin@example.com',
         password: 'Password123!',
       },
       loginTestScript,
@@ -116,17 +116,17 @@ async function generatePostmanCollection() {
     }),
     createPostmanRequest('POST Logout', 'POST', 'api/admin/logout'),
     createPostmanRequest('POST Forgot Password', 'POST', 'api/admin/forgot-password', {
-      email: 'admin@accessimate.com',
+      email: 'admin@example.com',
     }),
     createPostmanRequest('POST Otp Verify', 'POST', 'api/admin/otp-verify', {
-      email: 'admin@accessimate.com',
+      email: 'admin@example.com',
       otp: '123456',
     }),
     createPostmanRequest('POST Otp Resend', 'POST', 'api/admin/otp-resend', {
-      email: 'admin@accessimate.com',
+      email: 'admin@example.com',
     }),
     createPostmanRequest('POST Set password', 'POST', 'api/admin/set-password', {
-      email: 'admin@accessimate.com',
+      email: 'admin@example.com',
       token: '123456',
       password: 'NewPassword123!',
     }),
@@ -340,7 +340,7 @@ async function generatePostmanCollection() {
     createPostmanRequest('POST Store', 'POST', 'api/admin/users', {
       mobile: '+8801722222222',
       ccode: '+880',
-      email: 'staff@accessimate.com',
+      email: 'staff@example.com',
       password: 'Password123!',
       user_type: 1,
       first_name: 'John',
@@ -388,7 +388,7 @@ async function generatePostmanCollection() {
     ),
   ];
 
-  // Build the complete Accessimate -> Admin tree
+  // Build the complete nestjs-basement -> Admin tree
   const adminFolder = {
     name: 'Admin',
     item: [
@@ -418,8 +418,8 @@ async function generatePostmanCollection() {
   const postmanCollection = {
     info: {
       _postman_id: randomUUID(),
-      name: 'Accessimate',
-      description: 'Accessimate API Collection with Admin hierarchy, Auth, Menu, Role, and Users',
+      name: 'nestjs-basement',
+      description: 'nestjs-basement API Collection with Admin hierarchy, Auth, Menu, Role, and Users',
       schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
     },
     item: [adminFolder],
@@ -427,10 +427,10 @@ async function generatePostmanCollection() {
     variable: [],
   };
 
-  // Environment file matching the screenshot
+  // Environment file
   const postmanEnvironment = {
     id: randomUUID(),
-    name: 'Accessimate Dev',
+    name: 'nestjs-basement Dev',
     values: [
       {
         key: 'host',
@@ -459,7 +459,7 @@ async function generatePostmanCollection() {
     ],
     _postman_variable_scope: 'environment',
     _postman_exported_at: new Date().toISOString(),
-    _postman_exported_using: 'Accessimate Postman Generator',
+    _postman_exported_using: 'nestjs-basement Postman Generator',
   };
 
   const outputDir = path.join(__dirname, '..', 'postman');
@@ -467,15 +467,15 @@ async function generatePostmanCollection() {
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
-  const collectionPath = path.join(outputDir, 'accessimate.postman_collection.json');
-  const envPath = path.join(outputDir, 'accessimate.postman_environment.json');
+  const collectionPath = path.join(outputDir, 'nestjs_basement.postman_collection.json');
+  const envPath = path.join(outputDir, 'nestjs_basement.postman_environment.json');
 
   fs.writeFileSync(collectionPath, JSON.stringify(postmanCollection, null, 2));
   fs.writeFileSync(envPath, JSON.stringify(postmanEnvironment, null, 2));
 
   console.log(`✅ Collection exported to: ${collectionPath}`);
   console.log(`✅ Environment exported to: ${envPath}`);
-  console.log('🎉 Successfully generated Accessimate / Admin collection structure!');
+  console.log('🎉 Successfully generated nestjs-basement / Admin collection structure!');
 }
 
 generatePostmanCollection().catch((err) => {
