@@ -1,12 +1,15 @@
 import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { randomUUID } from 'crypto';
 import * as nodemailer from 'nodemailer';
+import { MongoLoggerService } from '@/modules/logger/mongo-logger.service';
 
 export interface SendMailOptions {
   to: string;
   subject: string;
   text?: string;
   html?: string;
+  metadata?: Record<string, any>;
 }
 
 @Injectable()
@@ -14,7 +17,10 @@ export class MailService {
   private readonly logger = new Logger(MailService.name);
   private transporter: nodemailer.Transporter | null = null;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly mongoLoggerService: MongoLoggerService,
+  ) {
     this.initTransporter();
   }
 
@@ -51,12 +57,27 @@ export class MailService {
 
   /**
    * Sends an email via SMTP if enabled.
-   * If SMTP_ENABLED=false, skips sending and returns { sent: false, skipped: true }.
-   * If SMTP_ENABLED=true and sending fails, throws an exception.
+   * Logs every email to MongoDB ('email_logs' collection) whether successful, failed, or skipped.
    */
   async sendMail(options: SendMailOptions): Promise<{ sent: boolean; messageId?: string; skipped?: boolean }> {
+    const fromAddress = this.configService.get<string>('SMTP_FROM') || 'noreply@example.com';
+    const fromName = this.configService.get<string>('SMTP_FROM_NAME') || 'NestJS Basement';
+    const fullFrom = `"${fromName}" <${fromAddress}>`;
+    const mailId = `MAIL-${randomUUID().substring(0, 8).toUpperCase()}`;
+
+    // 1. If SMTP is disabled: record as 'skipped' in MongoDB and exit
     if (!this.isSmtpEnabled()) {
       this.logger.log(`[SMTP Disabled] Email to ${options.to} was not sent (stored in database).`);
+      await this.mongoLoggerService.logEmail({
+        mail_id: mailId,
+        to: options.to,
+        from: fullFrom,
+        subject: options.subject,
+        body_text: options.text,
+        body_html: options.html,
+        status: 'skipped',
+        metadata: options.metadata,
+      });
       return { sent: false, skipped: true };
     }
 
@@ -64,12 +85,9 @@ export class MailService {
       this.initTransporter();
     }
 
-    const fromAddress = this.configService.get<string>('SMTP_FROM') || 'noreply@example.com';
-    const fromName = this.configService.get<string>('SMTP_FROM_NAME') || 'NestJS Basement';
-
     try {
       const info = await this.transporter!.sendMail({
-        from: `"${fromName}" <${fromAddress}>`,
+        from: fullFrom,
         to: options.to,
         subject: options.subject,
         text: options.text,
@@ -77,9 +95,41 @@ export class MailService {
       });
 
       this.logger.log(`Email dispatched to ${options.to} (Message ID: ${info.messageId})`);
+
+      // 2. If SMTP succeeded: record as 'success' in MongoDB
+      await this.mongoLoggerService.logEmail({
+        mail_id: info.messageId || mailId,
+        to: options.to,
+        from: fullFrom,
+        subject: options.subject,
+        body_text: options.text,
+        body_html: options.html,
+        status: 'success',
+        smtp_response: {
+          messageId: info.messageId,
+          accepted: info.accepted,
+          response: info.response,
+        },
+        metadata: options.metadata,
+      });
+
       return { sent: true, messageId: info.messageId };
     } catch (error: any) {
       this.logger.error(`Failed to send email to ${options.to}: ${error.message}`, error.stack);
+
+      // 3. If SMTP failed: record as 'error' in MongoDB
+      await this.mongoLoggerService.logEmail({
+        mail_id: mailId,
+        to: options.to,
+        from: fullFrom,
+        subject: options.subject,
+        body_text: options.text,
+        body_html: options.html,
+        status: 'error',
+        error: error.message,
+        metadata: options.metadata,
+      });
+
       throw new InternalServerErrorException({
         status: false,
         message: `Failed to send email: ${error.message || 'SMTP connection error'}`,

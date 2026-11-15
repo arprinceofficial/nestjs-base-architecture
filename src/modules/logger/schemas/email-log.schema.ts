@@ -1,10 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
 
-export type MailLogDocument = MailLog & Document;
+export type EmailLogDocument = EmailLog & Document;
 
-@Schema({ collection: 'mail_logs', timestamps: { createdAt: 'created_at', updatedAt: false } })
-export class MailLog {
+@Schema({ collection: 'email_logs', timestamps: { createdAt: 'created_at', updatedAt: false } })
+export class EmailLog {
   @Prop({ required: true, index: true })
   mail_id: string;
 
@@ -18,16 +18,19 @@ export class MailLog {
   subject: string;
 
   @Prop()
-  text?: string;
+  body_text?: string;
 
   @Prop()
-  html?: string;
+  body_html?: string;
 
-  @Prop({ required: true, index: true, default: 'sent' })
-  status: string; // 'sent' | 'failed' | 'skipped'
+  @Prop({ required: true, index: true })
+  status: string; // 'success' | 'error' | 'skipped'
 
   @Prop()
   error?: string;
+
+  @Prop({ type: MongooseSchema.Types.Mixed })
+  smtp_response?: Record<string, any>;
 
   @Prop({ type: MongooseSchema.Types.Mixed })
   metadata?: Record<string, any>;
@@ -36,4 +39,4 @@ export class MailLog {
   created_at: Date;
 }
 
-export const MailLogSchema = SchemaFactory.createForClass(MailLog);
+export const EmailLogSchema = SchemaFactory.createForClass(EmailLog);
