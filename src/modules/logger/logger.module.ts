@@ -7,26 +7,26 @@ import { MongoLoggerService } from './mongo-logger.service';
 @Global()
 @Module({})
 export class LoggerModule {
-  static register(): DynamicModule {
-    const mongoUri = process.env.MONGODB_URI?.trim();
-    const imports = [];
+    static register(): DynamicModule {
+        const mongoUri = process.env.MONGODB_URI?.trim();
+        const imports = [];
 
-    if (mongoUri) {
-      imports.push(
-        MongooseModule.forRoot(mongoUri),
-        MongooseModule.forFeature([
-          { name: ErrorLog.name, schema: ErrorLogSchema },
-          { name: EmailLog.name, schema: EmailLogSchema },
-        ]),
-      );
+        if (mongoUri) {
+            imports.push(
+                MongooseModule.forRoot(mongoUri),
+                MongooseModule.forFeature([
+                    { name: ErrorLog.name, schema: ErrorLogSchema },
+                    { name: EmailLog.name, schema: EmailLogSchema },
+                ]),
+            );
+        }
+
+        return {
+            module: LoggerModule,
+            global: true,
+            imports,
+            providers: [MongoLoggerService],
+            exports: [MongoLoggerService],
+        };
     }
-
-    return {
-      module: LoggerModule,
-      global: true,
-      imports,
-      providers: [MongoLoggerService],
-      exports: [MongoLoggerService],
-    };
-  }
 }

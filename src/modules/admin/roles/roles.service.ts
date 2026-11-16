@@ -1,8 +1,8 @@
 import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  InternalServerErrorException,
+    Injectable,
+    NotFoundException,
+    BadRequestException,
+    InternalServerErrorException,
 } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreateRoleDto } from './dto/create-role.dto';
@@ -14,211 +14,221 @@ import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class RolesService {
-  constructor(private readonly prisma: PrismaService) {}
+    constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(query: PaginationQueryDto): Promise<ApiResponse> {
-    const where: Prisma.RoleWhereInput = {};
+    async findAll(query: PaginationQueryDto): Promise<ApiResponse> {
+        const where: Prisma.RoleWhereInput = {};
 
-    if (query.trashed === 'with') {
-      // include deleted
-    } else if (query.trashed === 'only') {
-      where.deleted_at = { not: null };
-    } else {
-      where.deleted_at = null;
-    }
+        if (query.trashed === 'with') {
+            // include deleted
+        } else if (query.trashed === 'only') {
+            where.deleted_at = { not: null };
+        } else {
+            where.deleted_at = null;
+        }
 
-    if (query.search) {
-      where.role_name = {
-        contains: query.search,
-        mode: 'insensitive',
-      };
-    }
+        if (query.search) {
+            where.role_name = {
+                contains: query.search,
+                mode: 'insensitive',
+            };
+        }
 
-    if (query.status !== undefined && query.status !== null && query.status !== '') {
-      where.status =
-        query.status === 'true' || query.status === 1 || query.status === '1' ? 1 : 0;
-    }
+        if (
+            query.status !== undefined &&
+            query.status !== null &&
+            query.status !== ''
+        ) {
+            where.status =
+                query.status === 'true' ||
+                query.status === 1 ||
+                query.status === '1'
+                    ? 1
+                    : 0;
+        }
 
-    if (query.paginate) {
-      const page = Number(query.page) || 1;
-      const limit = Number(query.length) || 15;
-      const skip = (page - 1) * limit;
+        if (query.paginate) {
+            const page = Number(query.page) || 1;
+            const limit = Number(query.length) || 15;
+            const skip = (page - 1) * limit;
 
-      const [data, total] = await Promise.all([
-        this.prisma.role.findMany({
-          where,
-          orderBy: { role_name: 'asc' },
-          skip,
-          take: limit,
-        }),
-        this.prisma.role.count({ where }),
-      ]);
+            const [data, total] = await Promise.all([
+                this.prisma.role.findMany({
+                    where,
+                    orderBy: { role_name: 'asc' },
+                    skip,
+                    take: limit,
+                }),
+                this.prisma.role.count({ where }),
+            ]);
 
-      const lastPage = Math.ceil(total / limit);
+            const lastPage = Math.ceil(total / limit);
 
-      return {
-        status: true,
-        message: ApiMessages.GETALL,
-        data: {
-          data,
-          total,
-          current_page: page,
-          per_page: limit,
-          last_page: lastPage,
-          permissions: {},
-        },
-      };
-    }
+            return {
+                status: true,
+                message: ApiMessages.GETALL,
+                data: {
+                    data,
+                    total,
+                    current_page: page,
+                    per_page: limit,
+                    last_page: lastPage,
+                    permissions: {},
+                },
+            };
+        }
 
-    const data = await this.prisma.role.findMany({
-      where,
-      orderBy: { role_name: 'asc' },
-    });
-
-    return {
-      status: true,
-      message: ApiMessages.GETALL,
-      data: {
-        data,
-        permissions: {},
-      },
-    };
-  }
-
-  async findOne(id: number): Promise<ApiResponse> {
-    const role = await this.prisma.role.findFirst({
-      where: { id, deleted_at: null },
-    });
-
-    if (!role) {
-      throw new NotFoundException({
-        status: false,
-        message: ApiMessages.NODATA,
-      });
-    }
-
-    return {
-      status: true,
-      message: ApiMessages.SHOW,
-      data: role,
-    };
-  }
-
-  async create(dto: CreateRoleDto): Promise<ApiResponse> {
-    const existing = await this.prisma.role.findFirst({
-      where: { role_name: dto.role_name },
-    });
-
-    if (existing) {
-      throw new BadRequestException({
-        status: false,
-        message: `Role with name '${dto.role_name}' already exists.`,
-      });
-    }
-
-    const role = await this.prisma.role.create({
-      data: {
-        role_name: dto.role_name,
-        status: dto.status !== undefined ? (dto.status ? 1 : 0) : 1,
-      },
-    });
-
-    return {
-      status: true,
-      message: ApiMessages.STORE,
-      data: role,
-    };
-  }
-
-  async update(id: number, dto: UpdateRoleDto): Promise<ApiResponse> {
-    const role = await this.prisma.role.findFirst({
-      where: { id, deleted_at: null },
-    });
-
-    if (!role) {
-      throw new NotFoundException({
-        status: false,
-        message: ApiMessages.NODATA,
-      });
-    }
-
-    if (dto.role_name && dto.role_name !== role.role_name) {
-      const existing = await this.prisma.role.findFirst({
-        where: { role_name: dto.role_name },
-      });
-      if (existing && existing.id !== id) {
-        throw new BadRequestException({
-          status: false,
-          message: `Role with name '${dto.role_name}' already exists.`,
+        const data = await this.prisma.role.findMany({
+            where,
+            orderBy: { role_name: 'asc' },
         });
-      }
+
+        return {
+            status: true,
+            message: ApiMessages.GETALL,
+            data: {
+                data,
+                permissions: {},
+            },
+        };
     }
 
-    const updated = await this.prisma.role.update({
-      where: { id },
-      data: {
-        ...(dto.role_name !== undefined && { role_name: dto.role_name }),
-        ...(dto.status !== undefined && { status: dto.status ? 1 : 0 }),
-      },
-    });
+    async findOne(id: number): Promise<ApiResponse> {
+        const role = await this.prisma.role.findFirst({
+            where: { id, deleted_at: null },
+        });
 
-    return {
-      status: true,
-      message: ApiMessages.UPDATE,
-      data: updated,
-    };
-  }
+        if (!role) {
+            throw new NotFoundException({
+                status: false,
+                message: ApiMessages.NODATA,
+            });
+        }
 
-  async destroy(id: number): Promise<ApiResponse> {
-    const role = await this.prisma.role.findFirst({
-      where: { id, deleted_at: null },
-    });
-
-    if (!role) {
-      throw new NotFoundException({
-        status: false,
-        message: ApiMessages.NODATA,
-      });
+        return {
+            status: true,
+            message: ApiMessages.SHOW,
+            data: role,
+        };
     }
 
-    await this.prisma.role.update({
-      where: { id },
-      data: { deleted_at: new Date() },
-    });
+    async create(dto: CreateRoleDto): Promise<ApiResponse> {
+        const existing = await this.prisma.role.findFirst({
+            where: { role_name: dto.role_name },
+        });
 
-    return {
-      status: true,
-      message: ApiMessages.DESTROY,
-      data: null,
-    };
-  }
+        if (existing) {
+            throw new BadRequestException({
+                status: false,
+                message: `Role with name '${dto.role_name}' already exists.`,
+            });
+        }
 
-  async restore(id: number): Promise<ApiResponse> {
-    const role = await this.prisma.role.findFirst({
-      where: { id },
-    });
+        const role = await this.prisma.role.create({
+            data: {
+                role_name: dto.role_name,
+                status: dto.status !== undefined ? (dto.status ? 1 : 0) : 1,
+            },
+        });
 
-    if (!role) {
-      throw new NotFoundException({
-        status: false,
-        message: ApiMessages.NODATA,
-      });
+        return {
+            status: true,
+            message: ApiMessages.STORE,
+            data: role,
+        };
     }
 
-    const restored = await this.prisma.role.update({
-      where: { id },
-      data: { deleted_at: null },
-    });
+    async update(id: number, dto: UpdateRoleDto): Promise<ApiResponse> {
+        const role = await this.prisma.role.findFirst({
+            where: { id, deleted_at: null },
+        });
 
-    return {
-      status: true,
-      message: ApiMessages.RESTORE,
-      data: restored,
-    };
-  }
+        if (!role) {
+            throw new NotFoundException({
+                status: false,
+                message: ApiMessages.NODATA,
+            });
+        }
 
-  async showPermissions(roleId: number): Promise<ApiResponse> {
-    const query = Prisma.sql`
+        if (dto.role_name && dto.role_name !== role.role_name) {
+            const existing = await this.prisma.role.findFirst({
+                where: { role_name: dto.role_name },
+            });
+            if (existing && existing.id !== id) {
+                throw new BadRequestException({
+                    status: false,
+                    message: `Role with name '${dto.role_name}' already exists.`,
+                });
+            }
+        }
+
+        const updated = await this.prisma.role.update({
+            where: { id },
+            data: {
+                ...(dto.role_name !== undefined && {
+                    role_name: dto.role_name,
+                }),
+                ...(dto.status !== undefined && { status: dto.status ? 1 : 0 }),
+            },
+        });
+
+        return {
+            status: true,
+            message: ApiMessages.UPDATE,
+            data: updated,
+        };
+    }
+
+    async destroy(id: number): Promise<ApiResponse> {
+        const role = await this.prisma.role.findFirst({
+            where: { id, deleted_at: null },
+        });
+
+        if (!role) {
+            throw new NotFoundException({
+                status: false,
+                message: ApiMessages.NODATA,
+            });
+        }
+
+        await this.prisma.role.update({
+            where: { id },
+            data: { deleted_at: new Date() },
+        });
+
+        return {
+            status: true,
+            message: ApiMessages.DESTROY,
+            data: null,
+        };
+    }
+
+    async restore(id: number): Promise<ApiResponse> {
+        const role = await this.prisma.role.findFirst({
+            where: { id },
+        });
+
+        if (!role) {
+            throw new NotFoundException({
+                status: false,
+                message: ApiMessages.NODATA,
+            });
+        }
+
+        const restored = await this.prisma.role.update({
+            where: { id },
+            data: { deleted_at: null },
+        });
+
+        return {
+            status: true,
+            message: ApiMessages.RESTORE,
+            data: restored,
+        };
+    }
+
+    async showPermissions(roleId: number): Promise<ApiResponse> {
+        const query = Prisma.sql`
       SELECT
           "treeNode"."id",
           "treeNode"."pid",
@@ -258,63 +268,69 @@ export class RolesService {
       ORDER BY "treeNode"."serials" ASC
     `;
 
-    const permissions = await this.prisma.$queryRaw(query);
+        const permissions = await this.prisma.$queryRaw(query);
 
-    return {
-      status: true,
-      message: ApiMessages.SHOW,
-      data: permissions,
-    };
-  }
-
-  async updatePermissions(roleId: number, payload: any): Promise<ApiResponse> {
-    try {
-      let items: any[] = [];
-      if (Array.isArray(payload)) {
-        items = payload;
-      } else if (payload?.permissions && Array.isArray(payload.permissions)) {
-        items = payload.permissions;
-      } else if (payload?.data && Array.isArray(payload.data)) {
-        items = payload.data;
-      } else if (typeof payload === 'object' && payload !== null) {
-        const firstVal = Object.values(payload)[0];
-        if (Array.isArray(firstVal)) {
-          items = firstVal;
-        }
-      }
-
-      await this.prisma.$transaction(async (tx) => {
-        await tx.rolePermission.deleteMany({
-          where: { role_id: roleId },
-        });
-
-        const insertData = items
-          .filter((item) => item && typeof item === 'object')
-          .map((item) => ({
-            role_id: roleId,
-            view: item.viewP || item.view || 0,
-            add: item.addP || item.add || 0,
-            edit: item.editP || item.edit || 0,
-            delete: item.deleteP || item.delete || 0,
-          }));
-
-        if (insertData.length > 0) {
-          await tx.rolePermission.createMany({
-            data: insertData,
-          });
-        }
-      });
-
-      return {
-        status: true,
-        message: ApiMessages.UPDATE,
-        data: null,
-      };
-    } catch (error: any) {
-      throw new InternalServerErrorException({
-        status: false,
-        message: error.message || ApiMessages.FAILUPDATE,
-      });
+        return {
+            status: true,
+            message: ApiMessages.SHOW,
+            data: permissions,
+        };
     }
-  }
+
+    async updatePermissions(
+        roleId: number,
+        payload: any,
+    ): Promise<ApiResponse> {
+        try {
+            let items: any[] = [];
+            if (Array.isArray(payload)) {
+                items = payload;
+            } else if (
+                payload?.permissions &&
+                Array.isArray(payload.permissions)
+            ) {
+                items = payload.permissions;
+            } else if (payload?.data && Array.isArray(payload.data)) {
+                items = payload.data;
+            } else if (typeof payload === 'object' && payload !== null) {
+                const firstVal = Object.values(payload)[0];
+                if (Array.isArray(firstVal)) {
+                    items = firstVal;
+                }
+            }
+
+            await this.prisma.$transaction(async (tx) => {
+                await tx.rolePermission.deleteMany({
+                    where: { role_id: roleId },
+                });
+
+                const insertData = items
+                    .filter((item) => item && typeof item === 'object')
+                    .map((item) => ({
+                        role_id: roleId,
+                        view: item.viewP || item.view || 0,
+                        add: item.addP || item.add || 0,
+                        edit: item.editP || item.edit || 0,
+                        delete: item.deleteP || item.delete || 0,
+                    }));
+
+                if (insertData.length > 0) {
+                    await tx.rolePermission.createMany({
+                        data: insertData,
+                    });
+                }
+            });
+
+            return {
+                status: true,
+                message: ApiMessages.UPDATE,
+                data: null,
+            };
+        } catch (error: any) {
+            throw new InternalServerErrorException({
+                status: false,
+                message: error.message || ApiMessages.FAILUPDATE,
+            });
+        }
+    }
 }

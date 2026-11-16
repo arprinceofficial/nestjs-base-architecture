@@ -6,12 +6,12 @@ import { Public } from '../admin/auth/decorators/public.decorator';
 @ApiTags('Customer')
 @Controller()
 export class CustomerController {
-  constructor(private readonly customerService: CustomerService) {}
+    constructor(private readonly customerService: CustomerService) {}
 
-  @Public()
-  @Get('status')
-  @ApiOperation({ summary: 'Check Customer module status' })
-  getStatus() {
-    return this.customerService.getStatus();
-  }
+    @Public()
+    @Get('status')
+    @ApiOperation({ summary: 'Check Customer module status' })
+    getStatus() {
+        return this.customerService.getStatus();
+    }
 }

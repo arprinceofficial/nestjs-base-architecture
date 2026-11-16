@@ -177,6 +177,70 @@ Every outgoing email dispatched by the application is automatically recorded in 
 
 ---
 
+## 🎨 Template Engine & Directory Structure (`src/templates/`)
+
+The application features a centralized, manageable template rendering system powered by Handlebars (`handlebars`), mirroring Laravel's Blade view architecture. All templates are organized in dedicated directories so email templates and future report/PDF templates stay structured and maintainable.
+
+### Directory Structure
+
+```text
+src/templates/
+├── emails/
+│   ├── layout.hbs          # Master responsive email layout (header, logo, body slot, signature, footer)
+│   └── otp.hbs             # OTP verification & password reset email template
+└── reports/
+    └── sample-report.hbs   # Base report template for PDF generation and document exports
+```
+
+### Compiler Asset Pipeline
+When compiling with `pnpm run build`, Nest CLI is configured via `nest-cli.json` to automatically copy all `.hbs` template assets into `dist/src/templates/`. `TemplateService` dynamically resolves templates whether running via `ts-node` or production `dist/`.
+
+### How to Render Templates
+
+Inject `TemplateService` into any service:
+
+```typescript
+import { TemplateService } from '@/modules/template/template.service';
+
+@Injectable()
+export class ReportService {
+  constructor(private readonly templateService: TemplateService) {}
+
+  async generateInvoicePdf(invoice: any): Promise<string> {
+    // Renders src/templates/reports/invoice.hbs
+    const html = await this.templateService.renderReport('invoice', {
+      invoiceNumber: invoice.number,
+      items: invoice.items,
+      total: invoice.total,
+    });
+    // Pass html to Puppeteer, Playwright, or PDF generator
+    return html;
+  }
+}
+```
+
+### How to Send Templated Emails
+
+Send templated emails via `MailService`:
+
+```typescript
+// 1. Send OTP email (built-in helper)
+await this.mailService.sendOtpEmail('user@example.com', '123456', 'John Doe');
+
+// 2. Send any custom templated email
+await this.mailService.sendTemplateMail({
+  to: 'user@example.com',
+  subject: 'Welcome to Our Platform',
+  template: 'welcome', // automatically loads src/templates/emails/welcome.hbs wrapped in layout.hbs
+  context: {
+    userName: 'John Doe',
+    activationLink: 'https://example.com/activate',
+  },
+});
+```
+
+---
+
 ## 🏛️ Domain Architecture (Admin, CMS, Customer)
 
 Just like domain-partitioned controllers and routes in Laravel (`routes/api/admin.php`, `cms.php`, `customer.php`), NestJS accomplishes this using **Modular Architecture** and **`RouterModule`** (`@nestjs/core`):

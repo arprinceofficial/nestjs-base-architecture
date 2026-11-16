@@ -6,12 +6,12 @@ import { Public } from '../admin/auth/decorators/public.decorator';
 @ApiTags('CMS')
 @Controller()
 export class CmsController {
-  constructor(private readonly cmsService: CmsService) {}
+    constructor(private readonly cmsService: CmsService) {}
 
-  @Public()
-  @Get('status')
-  @ApiOperation({ summary: 'Check CMS module status' })
-  getStatus() {
-    return this.cmsService.getStatus();
-  }
+    @Public()
+    @Get('status')
+    @ApiOperation({ summary: 'Check CMS module status' })
+    getStatus() {
+        return this.cmsService.getStatus();
+    }
 }
