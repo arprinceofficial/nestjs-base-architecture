@@ -1,4 +1,4 @@
-# NestJS Basement
+# NestJS Base Architecture
 
 A production-ready base backend architecture built with **NestJS**, **Prisma ORM**, and **PostgreSQL**. It provides essential foundational systems—Authentication, User Management, Role-Based Access Control (RBAC), and Dynamic Menu Trees—so developers can build business features without reinventing core infrastructure.
 
@@ -20,17 +20,21 @@ A production-ready base backend architecture built with **NestJS**, **Prisma ORM
 ## 🚀 Quick Start for Developers
 
 ### 1. Install Dependencies
+
 ```bash
 pnpm install
 ```
 
 ### 2. Configure Environment
+
 Copy `.env.example` to create `.env` in the root directory:
+
 ```bash
 cp .env.example .env
 ```
 
 Review or customize your `.env` settings:
+
 ```env
 PORT=3000
 NODE_ENV=development
@@ -56,7 +60,9 @@ SMTP_FROM_NAME="NestJS Basement"
 ```
 
 ### 3. Database Setup & Seeding (Prisma)
+
 Run the following commands to create the tables in PostgreSQL and seed the default Super Administrator user and role:
+
 ```bash
 # Push schema to database
 pnpm prisma:push
@@ -69,11 +75,13 @@ pnpm prisma:seed
 ```
 
 ### 4. Start Development Server
+
 ```bash
 pnpm start:dev
 ```
 
 > **Tip**: To view verbose route mappings on startup during debugging:
+>
 > ```bash
 > DEBUG_ROUTES=true pnpm start:dev
 > ```
@@ -87,22 +95,22 @@ Swagger documentation: [http://localhost:3000/api/docs](http://localhost:3000/ap
 
 Once `pnpm prisma:seed` is executed, you can immediately log in with:
 
-| Field | Value |
-|---|---|
-| **Email** | `admin@example.com` |
-| **Password** | `Password123!` |
-| **Role** | Super Administrator (`role_id: 1`) |
+| Field        | Value                              |
+| ------------ | ---------------------------------- |
+| **Email**    | `admin@example.com`                |
+| **Password** | `Password123!`                     |
+| **Role**     | Super Administrator (`role_id: 1`) |
 
 ---
 
 ## 🗄️ Database Commands Reference
 
-| Command | Description |
-|---|---|
-| `pnpm prisma:push` | Pushes schema changes directly to PostgreSQL without migration files |
-| `pnpm prisma:seed` | Seeds default Super Admin (`admin@example.com`) and default roles |
-| `pnpm prisma:generate` | Re-generates Prisma client types |
-| `pnpm prisma:studio` | Launches interactive browser GUI on `http://localhost:5555` to view/edit database records |
+| Command                | Description                                                                               |
+| ---------------------- | ----------------------------------------------------------------------------------------- |
+| `pnpm prisma:push`     | Pushes schema changes directly to PostgreSQL without migration files                      |
+| `pnpm prisma:seed`     | Seeds default Super Admin (`admin@example.com`) and default roles                         |
+| `pnpm prisma:generate` | Re-generates Prisma client types                                                          |
+| `pnpm prisma:studio`   | Launches interactive browser GUI on `http://localhost:5555` to view/edit database records |
 
 ---
 
@@ -118,6 +126,7 @@ pnpm postman:export
 - **Environment**: `postman/nestjs_basement.postman_environment.json`
 
 **How it works in Postman:**
+
 1. Import both JSON files into Postman.
 2. Select the **`nestjs-basement Dev`** environment.
 3. Send **`Admin > Auth > POST Login`**.
@@ -130,25 +139,30 @@ pnpm postman:export
 All application errors, unhandled exceptions, and rejected requests are automatically captured by the global exception filter and persisted.
 
 ### Dual Storage Strategy (MongoDB vs. Local File)
+
 1. **With MongoDB (`MONGODB_URI` set in `.env`)**:
-   - Error logs are stored in MongoDB in the `error_logs` collection.
+    - Error logs are stored in MongoDB in the `error_logs` collection.
 2. **Without MongoDB (`MONGODB_URI` omitted or empty)**:
-   - The application boots without needing MongoDB.
-   - Logs automatically fallback to local file storage at **`logs/errors.log`**.
-   - The `logs/` directory is automatically ignored by `.gitignore` so logs are never committed to git.
+    - The application boots without needing MongoDB.
+    - Logs automatically fallback to local file storage at **`logs/errors.log`**.
+    - The `logs/` directory is automatically ignored by `.gitignore` so logs are never committed to git.
 
 ### Error Response Envelope
+
 Every failed API call returns a unique tracking `error_id`:
+
 ```json
 {
-  "status": false,
-  "message": "Invalid credentials",
-  "error_id": "ERR-5D8CEE0C"
+    "status": false,
+    "message": "Invalid credentials",
+    "error_id": "ERR-5D8CEE0C"
 }
 ```
 
 ### Stored Error Data
+
 Each log entry in MongoDB or `logs/errors.log` includes:
+
 - `error_id`: Unique reference code returned to the client for instant debugging
 - `status_code`: HTTP status code (400, 401, 404, 500, etc.)
 - `message` & `error_name`: Exception type and descriptive message
@@ -165,6 +179,7 @@ Each log entry in MongoDB or `logs/errors.log` includes:
 Every outgoing email dispatched by the application is automatically recorded in MongoDB in the **`email_logs`** collection (with fallback to `logs/mail.log` if MongoDB is disabled):
 
 ### Stored Email Log Details
+
 - `mail_id`: Message ID generated by SMTP (or unique reference)
 - `to`: Recipient email address
 - `from`: Sender name and email address
@@ -182,6 +197,7 @@ Every outgoing email dispatched by the application is automatically recorded in 
 To guarantee sub-50ms API response times, email delivery is handled asynchronously via **BullMQ** and **Redis**. When an endpoint calls `sendOtpEmail` or `sendTemplateMail`, the email is enqueued immediately and processed in the background with automatic retries and exponential backoff.
 
 ### BullMQ Queue Lifecycle & MongoDB Logging
+
 Every queue event across all jobs is persisted to MongoDB in the **`queue_logs`** collection (with fallback to `logs/queue.log`):
 
 - **`waiting`**: Enqueued job with sanitized payload and attempt count.
@@ -229,6 +245,7 @@ pnpm test:mail
 ```
 
 ### Diagnostic Stages Tested:
+
 - **Settings Source**: Validates `.env` and database accessibility (or skips database with `--config-only`).
 - **DNS Resolution**: Resolves `SMTP_HOST` against system DNS and validates reachable IPv4/IPv6 records.
 - **Outbound TCP**: Opens socket to `host:port` to detect cloud firewall or provider port restrictions (ports 25, 587, 2525, 465).
@@ -255,6 +272,7 @@ src/templates/
 ```
 
 ### Compiler Asset Pipeline
+
 When compiling with `pnpm run build`, Nest CLI is configured via `nest-cli.json` to automatically copy all `.hbs` template assets into `dist/src/templates/`. `TemplateService` dynamically resolves templates whether running via `ts-node` or production `dist/`.
 
 ### How to Render Templates
@@ -266,18 +284,18 @@ import { TemplateService } from '@/modules/template/template.service';
 
 @Injectable()
 export class ReportService {
-  constructor(private readonly templateService: TemplateService) {}
+    constructor(private readonly templateService: TemplateService) {}
 
-  async generateInvoicePdf(invoice: any): Promise<string> {
-    // Renders src/templates/reports/invoice.hbs
-    const html = await this.templateService.renderReport('invoice', {
-      invoiceNumber: invoice.number,
-      items: invoice.items,
-      total: invoice.total,
-    });
-    // Pass html to Puppeteer, Playwright, or PDF generator
-    return html;
-  }
+    async generateInvoicePdf(invoice: any): Promise<string> {
+        // Renders src/templates/reports/invoice.hbs
+        const html = await this.templateService.renderReport('invoice', {
+            invoiceNumber: invoice.number,
+            items: invoice.items,
+            total: invoice.total,
+        });
+        // Pass html to Puppeteer, Playwright, or PDF generator
+        return html;
+    }
 }
 ```
 
@@ -291,13 +309,13 @@ await this.mailService.sendOtpEmail('user@example.com', '123456', 'John Doe');
 
 // 2. Send any custom templated email
 await this.mailService.sendTemplateMail({
-  to: 'user@example.com',
-  subject: 'Welcome to Our Platform',
-  template: 'welcome', // automatically loads src/templates/emails/welcome.hbs wrapped in layout.hbs
-  context: {
-    userName: 'John Doe',
-    activationLink: 'https://example.com/activate',
-  },
+    to: 'user@example.com',
+    subject: 'Welcome to Our Platform',
+    template: 'welcome', // automatically loads src/templates/emails/welcome.hbs wrapped in layout.hbs
+    context: {
+        userName: 'John Doe',
+        activationLink: 'https://example.com/activate',
+    },
 });
 ```
 
@@ -327,22 +345,23 @@ src/modules/
 ```
 
 ### Centralized Routing Configuration (`src/app.module.ts`)
+
 ```typescript
 RouterModule.register([
-  {
-    path: 'admin',
-    module: AdminModule,
-    children: [AuthModule, RolesModule, TreeEntitiesModule, UsersModule],
-  },
-  {
-    path: 'cms',
-    module: CmsModule,
-  },
-  {
-    path: 'customer',
-    module: CustomerModule,
-  },
-])
+    {
+        path: 'admin',
+        module: AdminModule,
+        children: [AuthModule, RolesModule, TreeEntitiesModule, UsersModule],
+    },
+    {
+        path: 'cms',
+        module: CmsModule,
+    },
+    {
+        path: 'customer',
+        module: CustomerModule,
+    },
+]);
 ```
 
 ---
@@ -352,7 +371,9 @@ RouterModule.register([
 When adding a new feature or module to this architecture:
 
 ### Step 1: Define Model in Prisma
+
 Add your model to `prisma/schema.prisma`:
+
 ```prisma
 model Product {
   id         Int       @id @default(autoincrement())
@@ -364,45 +385,54 @@ model Product {
   deleted_at DateTime?
 }
 ```
+
 Apply schema changes:
+
 ```bash
 pnpm prisma:push
 pnpm prisma:generate
 ```
 
 ### Step 2: Create Module Files in the Appropriate Domain
+
 Choose which domain the feature belongs to:
+
 - **Admin**: `src/modules/admin/<feature>/`
 - **CMS**: `src/modules/cms/<feature>/`
 - **Customer**: `src/modules/customer/<feature>/`
 
 Create standard NestJS components:
+
 - `dto/`: Request validation classes using `class-validator` and `@nestjs/swagger`.
 - `<feature>.service.ts`: Business logic utilizing `PrismaService`.
 - `<feature>.controller.ts`: Route definitions (e.g., `@Controller('products')` inside `admin` will automatically route to `/api/v1/admin/products`).
 - `<feature>.module.ts`: NestJS module declaration.
 
 ### Step 3: Register in Domain & Router
+
 Add the new module to its domain module (e.g., `AdminModule`) and the `RouterModule` children list in `src/app.module.ts`:
+
 ```typescript
 RouterModule.register([
-  {
-    path: 'admin',
-    module: AdminModule,
-    children: [
-      AuthModule,
-      RolesModule,
-      TreeEntitiesModule,
-      UsersModule,
-      ProductsModule, // <-- your new module
-    ],
-  },
-  // ...
-])
+    {
+        path: 'admin',
+        module: AdminModule,
+        children: [
+            AuthModule,
+            RolesModule,
+            TreeEntitiesModule,
+            UsersModule,
+            ProductsModule, // <-- your new module
+        ],
+    },
+    // ...
+]);
 ```
 
 ### Step 4: Update Postman Collection
+
 Run the export script to immediately sync your new endpoints into Postman:
+
 ```bash
 pnpm postman:export
 ```
@@ -426,6 +456,7 @@ node dist/main.js
 ```
 
 ### Process Management with PM2
+
 ```bash
 pm2 start dist/main.js --name "nestjs-basement"
 pm2 status
