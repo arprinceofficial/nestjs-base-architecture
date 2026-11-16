@@ -1,10 +1,7 @@
 /**
- * Model Hidden Fields Configuration (Equivalent to Laravel Eloquent's $hidden property).
+ * Model Hidden Fields Configuration.
  *
- * In Laravel, you write:
- *   protected $hidden = ['password', 'auth_code', 'otp_expires_at', 'otp_for'];
- *
- * Here, define any model name and the array of fields you want to automatically
+ * Define any model name and the array of sensitive fields you want to automatically
  * exclude whenever records are serialized or returned in API responses.
  */
 export const MODEL_HIDDEN = {
@@ -20,7 +17,6 @@ export type ModelName = keyof typeof MODEL_HIDDEN;
 
 /**
  * Strips hidden fields from a single model object or an array of objects.
- * Matches Laravel's $hidden behavior.
  */
 export function sanitizeModel<T extends Record<string, any>>(
     modelName: ModelName,

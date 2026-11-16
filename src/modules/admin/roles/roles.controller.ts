@@ -37,7 +37,7 @@ export class RolesController {
 
     @Post('all')
     @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: 'Get all roles via POST (Laravel compatibility)' })
+    @ApiOperation({ summary: 'Get all roles via POST' })
     findAllPost(@Body() body: PaginationQueryDto) {
         return this.rolesService.findAll(body);
     }

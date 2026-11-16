@@ -258,7 +258,7 @@ pnpm test:mail
 
 ## 🎨 Template Engine: Global & Feature Module Views
 
-The application features a centralized, manageable template rendering system powered by Handlebars (`handlebars`), mirroring Laravel's Blade view architecture. Templates can be defined globally or **co-located directly inside their respective feature modules**:
+The application features a centralized, manageable template rendering system powered by Handlebars (`handlebars`). Templates can be defined globally or **co-located directly inside their respective feature modules**:
 
 ### Directory Structure
 
@@ -334,7 +334,7 @@ await this.mailService.sendTemplateMail({
 
 ## 🏛️ Domain Architecture (Admin, CMS, Customer)
 
-Just like domain-partitioned controllers and routes in Laravel (`routes/api/admin.php`, `cms.php`, `customer.php`), NestJS accomplishes this using **Modular Architecture** and **`RouterModule`** (`@nestjs/core`):
+To cleanly partition routes across functional domains (e.g. `admin`, `cms`, `customer`), NestJS accomplishes this using **Modular Architecture** and **`RouterModule`** (`@nestjs/core`):
 
 ```text
 src/modules/

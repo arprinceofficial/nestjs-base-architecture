@@ -34,7 +34,7 @@ export class UsersController {
 
     @Post('all')
     @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: 'Get all users via POST (Laravel compatibility)' })
+    @ApiOperation({ summary: 'Get all users via POST' })
     findAllPost(@Body() query: FilterUserDto) {
         return this.usersService.findAll(query);
     }

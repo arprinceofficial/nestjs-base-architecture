@@ -81,7 +81,7 @@ export class TreeEntitiesController {
     @Post('all')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({
-        summary: 'Get all tree entities via POST (Laravel compatibility)',
+        summary: 'Get all tree entities via POST',
     })
     findAllPost(@Body() query: PaginationQueryDto) {
         return this.treeEntitiesService.findAll(query);
