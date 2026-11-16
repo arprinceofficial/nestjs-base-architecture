@@ -23,6 +23,7 @@
     "test:e2e": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./test/jest-e2e.json",
     "postman:export": "ts-node -r tsconfig-paths/register scripts/generate-postman.ts",
     "mail:test-server": "ts-node -r tsconfig-paths/register scripts/mail-test-server.ts",
+    "make:module": "ts-node -r tsconfig-paths/register scripts/make-module.ts",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "prisma:migrate": "prisma migrate dev",

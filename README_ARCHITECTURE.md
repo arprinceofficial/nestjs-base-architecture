@@ -13,13 +13,14 @@ This guide explains the foundational architectural patterns used in this project
 
 ---
 
-## 1. Feature Module Structure (`Controller`, `Service`, `Module`, `DTO`, `Views`)
+## 1. Feature Module Structure (`Controller`, `Service`, `Module`, `DTO`, `Models`, `Views`)
 
-Every feature module in NestJS (such as `users`, `roles`, `auth`) is self-contained with its own routing, business logic, validation, and email/document views:
+Every feature module in this architecture is self-contained with its own routing, business logic, validation, model-level rules, and views:
 
 ```text
 src/modules/admin/users/
 ├── dto/                  📦 (Validation rules: create-user.dto.ts, update-user.dto.ts)
+├── models/               🏛️ (Model definition & hidden fields: user.model.ts)
 ├── views/                🎨 (Feature views: otp.hbs, welcome.hbs)
 ├── users.controller.ts   ⚙️ (Routing & HTTP Layer)
 ├── users.service.ts      🅰️ (Business Logic & Database Layer)
@@ -34,7 +35,23 @@ src/modules/admin/users/
 | `*.service.ts` | Contains pure business logic: Prisma DB queries, transactions, bcrypt hashing, and domain rules. No HTTP-specific objects live here. |
 | `*.module.ts` | The Dependency Injection container. Tells NestJS which controllers to register, which services to instantiate, and what to export to other modules. |
 | `dto/` | Data Transfer Objects that validate and type-cast incoming request payloads before the controller receives them. |
+| `models/` | Domain model class (extends `BaseModel`) that defines model-specific configurations, including sensitive fields to omit via `static override readonly hidden = [...]`. |
 | `views/` | Feature-specific email and document templates (e.g. `users/views/otp.hbs`). |
+
+### One-Command Module Generator
+To generate a complete, perfectly structured feature module in one command line:
+```bash
+pnpm make:module admin/products
+# Or for customer domain:
+pnpm make:module customer/orders
+```
+This automatically scaffolds:
+- `dto/` (`create-*.dto.ts`, `update-*.dto.ts`, `filter-*.dto.ts`)
+- `models/` (`*.model.ts` with `BaseModel` inheritance & `hidden` fields)
+- `views/` (`*-notification.hbs`)
+- `*.controller.ts`
+- `*.service.ts`
+- `*.module.ts`
 
 ### Why This Separation Matters:
 - **Clean Controllers**: Controllers stay slim (typically 3–5 lines per endpoint), acting solely as HTTP traffic directors.

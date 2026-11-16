@@ -17,7 +17,7 @@ import {
 } from './dto/login.dto';
 import { ApiResponse } from '@/common/interfaces/api-response.interface';
 import { ApiMessages } from '@/common/constants/api-messages.constant';
-import { sanitizeUser } from '@/common/utils/model-hidden.util';
+import { UserModel } from '@/modules/admin/users/models/user.model';
 
 @Injectable()
 export class AuthService {
@@ -56,7 +56,7 @@ export class AuthService {
     }
 
     private sanitizeUser(user: any) {
-        return sanitizeUser(user);
+        return UserModel.sanitize(user);
     }
 
     async login(dto: LoginDto): Promise<ApiResponse> {
