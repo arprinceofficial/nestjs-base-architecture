@@ -283,22 +283,39 @@ export class MailService {
         userName?: string,
         sync?: boolean,
     ): Promise<void> {
+        const appName =
+            this.configService.get<string>('APP_NAME') || 'NestJS Base';
+        const subject = `One Time Password (OTP) for ${appName}`;
+
         const html = await this.templateService.renderEmail('users/otp', {
             email,
             otp,
             userName,
+            appName,
             expiryMinutes: 10,
-            title: 'Password Reset OTP',
-            preheader: 'Your one-time password for password reset',
+            title: `One Time Password (OTP) - ${appName}`,
+            preheader: `Your verification code is ${otp}. Use this code to complete verification.`,
         });
+
+        const plainText = [
+            `Your verification code is: ${otp}`,
+            '',
+            `Use this One-Time Password (OTP) to complete your verification for ${appName}. This code will expire in 10 minutes.`,
+            '',
+            `Never share this code with anyone. If you did not request this, you can safely ignore this email.`,
+        ].join('\n');
 
         await this.sendMail({
             to: email,
-            subject: 'Your Password Reset OTP',
-            text: `Your password reset OTP is: ${otp}. It will expire in 10 minutes.`,
+            subject,
+            text: plainText,
             html,
             sync,
-            metadata: { action: 'forgot_password_otp', email },
+            metadata: {
+                action: 'forgot_password_otp',
+                email,
+                app_name: appName,
+            },
         });
     }
 }
