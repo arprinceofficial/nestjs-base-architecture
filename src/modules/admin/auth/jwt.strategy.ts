@@ -15,7 +15,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             ignoreExpiration: false,
             secretOrKey:
                 configService.get<string>('JWT_SECRET') ||
-                'nestjs-basement-secret-key-1234567890',
+                'app-default-jwt-secret-key-replace-in-env',
             passReqToCallback: true,
         });
     }

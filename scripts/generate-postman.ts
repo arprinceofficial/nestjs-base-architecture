@@ -1,6 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
+import * as dotenv from 'dotenv';
+
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+const appName = process.env.APP_NAME || 'NestJS Application';
 
 function createPostmanRequest(
     name: string,
@@ -88,7 +92,7 @@ function createPostmanRequest(
 
 async function generatePostmanCollection() {
     console.log(
-        '🚀 Generating Postman Collection matching the nestjs-basement Admin hierarchy...',
+        `🚀 Generating Postman Collection matching the ${appName} Admin hierarchy...`,
     );
 
     const loginTestScript = [
@@ -460,7 +464,7 @@ async function generatePostmanCollection() {
         ),
     ];
 
-    // Build the complete nestjs-basement -> Admin tree
+    // Build the complete Admin, CMS, and Customer hierarchy tree
     const adminFolder = {
         name: 'Admin',
         item: [
@@ -502,9 +506,8 @@ async function generatePostmanCollection() {
     const postmanCollection = {
         info: {
             _postman_id: randomUUID(),
-            name: 'nestjs-basement',
-            description:
-                'nestjs-basement API Collection partitioned into Admin, CMS, and Customer',
+            name: `${appName} API`,
+            description: `${appName} API Collection partitioned into Admin, CMS, and Customer`,
             schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
         },
         item: [adminFolder, cmsFolder, customerFolder],
@@ -515,7 +518,7 @@ async function generatePostmanCollection() {
     // Environment file
     const postmanEnvironment = {
         id: randomUUID(),
-        name: 'nestjs-basement Dev',
+        name: `${appName} Dev`,
         values: [
             {
                 key: 'host',
@@ -544,7 +547,7 @@ async function generatePostmanCollection() {
         ],
         _postman_variable_scope: 'environment',
         _postman_exported_at: new Date().toISOString(),
-        _postman_exported_using: 'nestjs-basement Postman Generator',
+        _postman_exported_using: `${appName} Postman Generator`,
     };
 
     const outputDir = path.join(__dirname, '..', 'postman');
@@ -554,24 +557,37 @@ async function generatePostmanCollection() {
 
     const collectionPath = path.join(
         outputDir,
-        'nestjs_basement.postman_collection.json',
+        'api_collection.postman_collection.json',
     );
     const envPath = path.join(
         outputDir,
-        'nestjs_basement.postman_environment.json',
+        'api_environment.postman_environment.json',
     );
 
+    // Also write backwards-compatible files if older references exist
     fs.writeFileSync(
         collectionPath,
         JSON.stringify(postmanCollection, null, 2),
     );
     fs.writeFileSync(envPath, JSON.stringify(postmanEnvironment, null, 2));
 
+    const legacyCollection = path.join(
+        outputDir,
+        'nestjs_basement.postman_collection.json',
+    );
+    const legacyEnv = path.join(
+        outputDir,
+        'nestjs_basement.postman_environment.json',
+    );
+    fs.writeFileSync(
+        legacyCollection,
+        JSON.stringify(postmanCollection, null, 2),
+    );
+    fs.writeFileSync(legacyEnv, JSON.stringify(postmanEnvironment, null, 2));
+
     console.log(`✅ Collection exported to: ${collectionPath}`);
     console.log(`✅ Environment exported to: ${envPath}`);
-    console.log(
-        '🎉 Successfully generated nestjs-basement / Admin collection structure!',
-    );
+    console.log(`🎉 Successfully generated ${appName} collection structure!`);
 }
 
 generatePostmanCollection().catch((err) => {

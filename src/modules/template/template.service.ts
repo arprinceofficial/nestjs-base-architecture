@@ -94,7 +94,9 @@ export class TemplateService implements OnModuleInit {
     }
 
     private getAppName(): string {
-        return this.configService.get<string>('APP_NAME') || 'NestJS Basement';
+        return (
+            this.configService.get<string>('APP_NAME') || 'NestJS Application'
+        );
     }
 
     private getSupportEmail(): string {

@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, ConsoleLogger, VersioningType } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
@@ -49,11 +50,16 @@ async function bootstrap() {
     const mongoLogger = app.get(MongoLoggerService);
     app.useGlobalFilters(new AllExceptionsFilter(mongoLogger));
 
+    // Dynamic App Name from Environment
+    const configService = app.get(ConfigService);
+    const appName =
+        configService.get<string>('APP_NAME') || 'NestJS Application';
+
     // Setup Swagger Documentation
     const swaggerConfig = new DocumentBuilder()
-        .setTitle('NestJS Basement API')
+        .setTitle(`${appName} API`)
         .setDescription(
-            'Enterprise NestJS REST API: User, Role, Role Permission, and Menu Setup (Tree Entity)',
+            `${appName} - REST API: User, Role, Role Permission, and Menu Setup (Tree Entity)`,
         )
         .setVersion('1.0')
         .addBearerAuth()

@@ -17,7 +17,7 @@ import { APP_GUARD } from '@nestjs/core';
             useFactory: (configService: ConfigService) => ({
                 secret:
                     configService.get<string>('JWT_SECRET') ||
-                    'nestjs-basement-secret-key-1234567890',
+                    'app-default-jwt-secret-key-replace-in-env',
                 signOptions: {
                     expiresIn: (configService.get<string>('JWT_EXPIRES_IN') ||
                         '24h') as any,

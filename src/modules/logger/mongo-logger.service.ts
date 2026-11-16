@@ -5,6 +5,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ErrorLog, ErrorLogDocument } from './schemas/error-log.schema';
 import { EmailLog, EmailLogDocument } from './schemas/email-log.schema';
+import { QueueLog, QueueLogDocument } from './schemas/queue-log.schema';
 
 export interface CreateErrorLogParams {
     error_id: string;
@@ -38,6 +39,26 @@ export interface CreateEmailLogParams {
     metadata?: Record<string, any>;
 }
 
+export interface CreateQueueLogParams {
+    queue_name: string;
+    job_id: string;
+    job_name: string;
+    event:
+        | 'waiting'
+        | 'active'
+        | 'completed'
+        | 'failed'
+        | 'stalled'
+        | 'retried'
+        | 'progress';
+    payload?: Record<string, any>;
+    result?: Record<string, any>;
+    error?: string;
+    stack?: string;
+    attempts_made?: number;
+    duration_ms?: number;
+}
+
 @Injectable()
 export class MongoLoggerService {
     private readonly fallbackLogger = new Logger('AppLogger');
@@ -51,6 +72,11 @@ export class MongoLoggerService {
         process.cwd(),
         'logs',
         'mail.log',
+    );
+    private readonly queueLogFilePath = path.join(
+        process.cwd(),
+        'logs',
+        'queue.log',
     );
 
     private static readonly SENSITIVE_KEYS = new Set([
@@ -74,6 +100,10 @@ export class MongoLoggerService {
         @Optional()
         @InjectModel(EmailLog.name)
         private readonly emailLogModel?: Model<EmailLogDocument>,
+
+        @Optional()
+        @InjectModel(QueueLog.name)
+        private readonly queueLogModel?: Model<QueueLogDocument>,
     ) {
         this.ensureLogsDirectory();
         if (!this.errorLogModel) {
@@ -209,6 +239,46 @@ export class MongoLoggerService {
         } catch (err: any) {
             this.fallbackLogger.error(
                 `Failed to write to logs/mail.log: ${err.message}`,
+            );
+        }
+    }
+
+    /**
+     * Persists every BullMQ queue lifecycle event (waiting, active, completed, failed, stalled, etc.)
+     * to MongoDB in collection 'queue_logs'. Falls back to logs/queue.log if MongoDB is unavailable.
+     */
+    async logQueueEvent(params: CreateQueueLogParams): Promise<void> {
+        const sanitizedPayload = this.sanitize(params.payload);
+
+        // 1. If MongoDB is available, write to queue_logs collection
+        if (this.queueLogModel) {
+            try {
+                await this.queueLogModel.create({
+                    ...params,
+                    payload: sanitizedPayload,
+                    created_at: new Date(),
+                });
+                return;
+            } catch (err: any) {
+                this.fallbackLogger.warn(
+                    `MongoDB write failed for queue log [${params.queue_name}:${params.job_id}:${params.event}]: ${err.message}. Falling back to local file log.`,
+                );
+            }
+        }
+
+        // 2. Default storage fallback: write to logs/queue.log
+        try {
+            this.ensureLogsDirectory();
+            const logRecord = {
+                timestamp: new Date().toISOString(),
+                ...params,
+                payload: sanitizedPayload,
+            };
+            const line = JSON.stringify(logRecord) + '\n';
+            fs.appendFileSync(this.queueLogFilePath, line, 'utf8');
+        } catch (err: any) {
+            this.fallbackLogger.error(
+                `Failed to write to logs/queue.log: ${err.message}`,
             );
         }
     }

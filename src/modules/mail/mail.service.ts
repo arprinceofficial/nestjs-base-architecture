@@ -2,8 +2,11 @@ import {
     Injectable,
     Logger,
     InternalServerErrorException,
+    Optional,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
 import * as nodemailer from 'nodemailer';
 import { MongoLoggerService } from '@/modules/logger/mongo-logger.service';
@@ -14,6 +17,7 @@ export interface SendMailOptions {
     subject: string;
     text?: string;
     html?: string;
+    sync?: boolean; // Set to true to bypass BullMQ background queue
     metadata?: Record<string, any>;
 }
 
@@ -24,6 +28,7 @@ export interface SendTemplateMailOptions {
     context?: Record<string, any>;
     text?: string;
     layout?: string | boolean;
+    sync?: boolean;
     metadata?: Record<string, any>;
 }
 
@@ -36,6 +41,10 @@ export class MailService {
         private readonly configService: ConfigService,
         private readonly mongoLoggerService: MongoLoggerService,
         private readonly templateService: TemplateService,
+
+        @Optional()
+        @InjectQueue('mail')
+        private readonly mailQueue?: Queue,
     ) {
         this.initTransporter();
     }
@@ -81,23 +90,28 @@ export class MailService {
     }
 
     /**
-     * Sends an email via SMTP if enabled.
-     * Logs every email to MongoDB ('email_logs' collection) whether successful, failed, or skipped.
+     * Primary entry point to dispatch emails.
+     * By default, enqueues the email into BullMQ for lightning-fast, non-blocking API performance.
+     * Also records the 'waiting' queue event in MongoDB collection 'queue_logs'.
      */
-    async sendMail(
-        options: SendMailOptions,
-    ): Promise<{ sent: boolean; messageId?: string; skipped?: boolean }> {
-        const fromAddress =
-            this.configService.get<string>('SMTP_FROM') ||
-            'noreply@example.com';
-        const fromName =
-            this.configService.get<string>('SMTP_FROM_NAME') ||
-            'NestJS Basement';
-        const fullFrom = `"${fromName}" <${fromAddress}>`;
-        const mailId = `MAIL-${randomUUID().substring(0, 8).toUpperCase()}`;
-
-        // 1. If SMTP is disabled: record as 'skipped' in MongoDB and exit
+    async sendMail(options: SendMailOptions): Promise<{
+        sent: boolean;
+        messageId?: string;
+        skipped?: boolean;
+        queued?: boolean;
+    }> {
+        // If SMTP is disabled: record as 'skipped' in MongoDB directly
         if (!this.isSmtpEnabled()) {
+            const fromAddress =
+                this.configService.get<string>('SMTP_FROM') ||
+                'noreply@example.com';
+            const fromName =
+                this.configService.get<string>('SMTP_FROM_NAME') ||
+                this.configService.get<string>('APP_NAME') ||
+                'NestJS Application';
+            const fullFrom = `"${fromName}" <${fromAddress}>`;
+            const mailId = `MAIL-${randomUUID().substring(0, 8).toUpperCase()}`;
+
             this.logger.log(
                 `[SMTP Disabled] Email to ${options.to} was not sent (stored in database).`,
             );
@@ -113,6 +127,61 @@ export class MailService {
             });
             return { sent: false, skipped: true };
         }
+
+        // Fast asynchronous path via BullMQ queue (unless sync: true requested)
+        if (!options.sync && this.mailQueue) {
+            try {
+                const job = await this.mailQueue.add('send_mail', options, {
+                    attempts: 3,
+                    backoff: {
+                        type: 'exponential',
+                        delay: 3000,
+                    },
+                    removeOnComplete: true,
+                    removeOnFail: false,
+                });
+
+                this.logger.log(
+                    `Email to ${options.to} enqueued to BullMQ (Job ID: ${job.id})`,
+                );
+
+                // Log queue event in MongoDB queue_logs
+                await this.mongoLoggerService.logQueueEvent({
+                    queue_name: 'mail',
+                    job_id: String(job.id),
+                    job_name: 'send_mail',
+                    event: 'waiting',
+                    payload: options,
+                });
+
+                return { sent: true, queued: true, messageId: `JOB-${job.id}` };
+            } catch (err: any) {
+                this.logger.warn(
+                    `BullMQ enqueue failed: ${err.message}. Falling back to direct dispatch.`,
+                );
+            }
+        }
+
+        // Direct/Synchronous dispatch fallback
+        return this.sendDirect(options);
+    }
+
+    /**
+     * Executes the actual SMTP network transmission and logs to MongoDB collection 'email_logs'.
+     * Called in background by BullMQ MailProcessor (or directly when sync: true).
+     */
+    async sendDirect(
+        options: SendMailOptions,
+    ): Promise<{ sent: boolean; messageId?: string; skipped?: boolean }> {
+        const fromAddress =
+            this.configService.get<string>('SMTP_FROM') ||
+            'noreply@example.com';
+        const fromName =
+            this.configService.get<string>('SMTP_FROM_NAME') ||
+            this.configService.get<string>('APP_NAME') ||
+            'NestJS Application';
+        const fullFrom = `"${fromName}" <${fromAddress}>`;
+        const mailId = `MAIL-${randomUUID().substring(0, 8).toUpperCase()}`;
 
         if (!this.transporter) {
             this.initTransporter();
@@ -131,7 +200,7 @@ export class MailService {
                 `Email dispatched to ${options.to} (Message ID: ${info.messageId})`,
             );
 
-            // 2. If SMTP succeeded: record as 'success' in MongoDB
+            // 1. If SMTP succeeded: record as 'success' in MongoDB email_logs
             await this.mongoLoggerService.logEmail({
                 mail_id: info.messageId || mailId,
                 to: options.to,
@@ -155,7 +224,7 @@ export class MailService {
                 error.stack,
             );
 
-            // 3. If SMTP failed: record as 'error' in MongoDB
+            // 2. If SMTP failed: record as 'error' in MongoDB email_logs
             await this.mongoLoggerService.logEmail({
                 mail_id: mailId,
                 to: options.to,
@@ -176,11 +245,14 @@ export class MailService {
     }
 
     /**
-     * Helper to dispatch templated emails using the template engine.
+     * Helper to dispatch templated emails using the template engine and BullMQ queue.
      */
-    async sendTemplateMail(
-        options: SendTemplateMailOptions,
-    ): Promise<{ sent: boolean; messageId?: string; skipped?: boolean }> {
+    async sendTemplateMail(options: SendTemplateMailOptions): Promise<{
+        sent: boolean;
+        messageId?: string;
+        skipped?: boolean;
+        queued?: boolean;
+    }> {
         const layout =
             options.layout !== undefined ? options.layout : 'emails/layout';
         const html = await this.templateService.renderEmail(
@@ -197,17 +269,19 @@ export class MailService {
             subject: options.subject,
             text: options.text,
             html,
+            sync: options.sync,
             metadata: options.metadata,
         });
     }
 
     /**
-     * Helper to dispatch password reset OTP emails using the email template engine.
+     * Helper to dispatch password reset OTP emails using the email template engine and BullMQ queue.
      */
     async sendOtpEmail(
         email: string,
         otp: string,
         userName?: string,
+        sync?: boolean,
     ): Promise<void> {
         const html = await this.templateService.renderEmail('otp', {
             email,
@@ -223,6 +297,7 @@ export class MailService {
             subject: 'Your Password Reset OTP',
             text: `Your password reset OTP is: ${otp}. It will expire in 10 minutes.`,
             html,
+            sync,
             metadata: { action: 'forgot_password_otp', email },
         });
     }

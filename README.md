@@ -177,6 +177,68 @@ Every outgoing email dispatched by the application is automatically recorded in 
 
 ---
 
+## ⚡ High-Performance Queued Mail with BullMQ & MongoDB (`queue_logs` Collection)
+
+To guarantee sub-50ms API response times, email delivery is handled asynchronously via **BullMQ** and **Redis**. When an endpoint calls `sendOtpEmail` or `sendTemplateMail`, the email is enqueued immediately and processed in the background with automatic retries and exponential backoff.
+
+### BullMQ Queue Lifecycle & MongoDB Logging
+Every queue event across all jobs is persisted to MongoDB in the **`queue_logs`** collection (with fallback to `logs/queue.log`):
+
+- **`waiting`**: Enqueued job with sanitized payload and attempt count.
+- **`active`**: Job started processing by `MailProcessor`.
+- **`completed`**: Job finished successfully with execution duration in milliseconds and result details.
+- **`failed`**: Job encountered an error, recording error message, stack trace, and attempt number.
+- **`stalled` / `progress`**: Worker heartbeat recovery and progress events.
+
+### How It Works
+
+```typescript
+// 1. Asynchronous non-blocking dispatch (returns in < 30ms)
+await this.mailService.sendOtpEmail('user@example.com', '123456', 'John Doe');
+
+// 2. Synchronous direct dispatch (if ever needed to block for delivery)
+await this.mailService.sendMail({
+    to: 'user@example.com',
+    subject: 'Urgent Notification',
+    html: '<p>Content</p>',
+    sync: true, // bypasses queue
+});
+```
+
+---
+
+## 🩺 Mail Server Diagnostic CLI (`pnpm mail:test-server`)
+
+A production-ready diagnostic command that validates SMTP connectivity from your hosting server before dispatching customer notifications:
+
+```bash
+# 1. Standard diagnostic check (DNS, Outbound TCP, ESMTP, TLS certificates, and Authentication)
+pnpm mail:test-server
+
+# 2. Check configuration and send a live test message to an inbox
+pnpm mail:test-server --to=user@example.com
+
+# 3. Test .env configuration directly without checking database connectivity
+pnpm mail:test-server --config-only
+
+# 4. Custom socket timeout (1-60 seconds, default: 10)
+pnpm mail:test-server --timeout=15
+
+# 5. Run automated diagnostic unit tests
+pnpm test:mail
+```
+
+### Diagnostic Stages Tested:
+- **Settings Source**: Validates `.env` and database accessibility (or skips database with `--config-only`).
+- **DNS Resolution**: Resolves `SMTP_HOST` against system DNS and validates reachable IPv4/IPv6 records.
+- **Outbound TCP**: Opens socket to `host:port` to detect cloud firewall or provider port restrictions (ports 25, 587, 2525, 465).
+- **ESMTP Capability**: Negotiates `EHLO` banner and inspects advertised server capabilities (`STARTTLS`, `AUTH`, `SIZE`, etc.).
+- **TLS / SSL & Certificates**: Tests STARTTLS or direct SMTPS, validates certificate issuer, expiry date, and peer verification.
+- **SMTP Authentication**: Authenticates with `SMTP_USER` and `SMTP_PASS` over encrypted channel while strictly redacting secrets from all console outputs.
+- **Message Acceptance**: Optional test message submission via `--to` confirming remote server acceptance (`250 OK`).
+
+---
+
 ## 🎨 Template Engine & Directory Structure (`src/templates/`)
 
 The application features a centralized, manageable template rendering system powered by Handlebars (`handlebars`), mirroring Laravel's Blade view architecture. All templates are organized in dedicated directories so email templates and future report/PDF templates stay structured and maintainable.

@@ -2,6 +2,7 @@ import { Module, DynamicModule, Global } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ErrorLog, ErrorLogSchema } from './schemas/error-log.schema';
 import { EmailLog, EmailLogSchema } from './schemas/email-log.schema';
+import { QueueLog, QueueLogSchema } from './schemas/queue-log.schema';
 import { MongoLoggerService } from './mongo-logger.service';
 
 @Global()
@@ -17,6 +18,7 @@ export class LoggerModule {
                 MongooseModule.forFeature([
                     { name: ErrorLog.name, schema: ErrorLogSchema },
                     { name: EmailLog.name, schema: EmailLogSchema },
+                    { name: QueueLog.name, schema: QueueLogSchema },
                 ]),
             );
         }
