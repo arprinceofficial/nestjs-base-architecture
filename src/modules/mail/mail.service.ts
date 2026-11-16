@@ -283,7 +283,7 @@ export class MailService {
         userName?: string,
         sync?: boolean,
     ): Promise<void> {
-        const html = await this.templateService.renderEmail('otp', {
+        const html = await this.templateService.renderEmail('users/otp', {
             email,
             otp,
             userName,

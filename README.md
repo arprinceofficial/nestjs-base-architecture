@@ -256,24 +256,35 @@ pnpm test:mail
 
 ---
 
-## 🎨 Template Engine & Directory Structure (`src/templates/`)
+## 🎨 Template Engine: Global & Feature Module Views
 
-The application features a centralized, manageable template rendering system powered by Handlebars (`handlebars`), mirroring Laravel's Blade view architecture. All templates are organized in dedicated directories so email templates and future report/PDF templates stay structured and maintainable.
+The application features a centralized, manageable template rendering system powered by Handlebars (`handlebars`), mirroring Laravel's Blade view architecture. Templates can be defined globally or **co-located directly inside their respective feature modules**:
 
 ### Directory Structure
 
 ```text
-src/templates/
-├── emails/
-│   ├── layout.hbs          # Master responsive email layout (header, logo, body slot, signature, footer)
-│   └── otp.hbs             # OTP verification & password reset email template
-└── reports/
-    └── sample-report.hbs   # Base report template for PDF generation and document exports
+src/
+├── modules/admin/users/
+│   ├── dto/
+│   ├── views/
+│   │   └── otp.hbs         # Feature-specific email view (e.g. Password Reset OTP)
+│   ├── users.controller.ts
+│   ├── users.service.ts
+│   └── users.module.ts
+└── templates/
+    ├── emails/
+    │   └── layout.hbs      # Shared responsive email layout (header, logo, body slot, signature, footer)
+    └── reports/
+        └── sample-report.hbs # Base report template for PDF generation and document exports
 ```
 
 ### Compiler Asset Pipeline
 
-When compiling with `pnpm run build`, Nest CLI is configured via `nest-cli.json` to automatically copy all `.hbs` template assets into `dist/src/templates/`. `TemplateService` dynamically resolves templates whether running via `ts-node` or production `dist/`.
+When compiling with `pnpm run build`, Nest CLI is configured via `nest-cli.json` to automatically copy both global templates and module views:
+- `templates/**/*` -> `dist/src/templates/`
+- `modules/**/views/**/*` -> `dist/src/modules/**/views/`
+
+`TemplateService` dynamically resolves templates whether running via `ts-node` or production `dist/`.
 
 ### How to Render Templates
 

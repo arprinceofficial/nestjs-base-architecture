@@ -12,12 +12,14 @@ This guide explains the foundational architectural patterns used in this project
 
 ---
 
-## 1. The NestJS "Holy Trinity" (`Controller`, `Service`, `Module`)
+## 1. Feature Module Structure (`Controller`, `Service`, `Module`, `DTO`, `Views`)
 
-Every feature in NestJS (such as `users`, `roles`, `auth`) is composed of three core files:
+Every feature module in NestJS (such as `users`, `roles`, `auth`) is self-contained with its own routing, business logic, validation, and email/document views:
 
 ```text
 src/modules/admin/users/
+├── dto/                  📦 (Validation rules: create-user.dto.ts, update-user.dto.ts)
+├── views/                🎨 (Feature views: otp.hbs, welcome.hbs)
 ├── users.controller.ts   ⚙️ (Routing & HTTP Layer)
 ├── users.service.ts      🅰️ (Business Logic & Database Layer)
 └── users.module.ts       🅰️ (Dependency Injection & Module Container)
@@ -25,11 +27,13 @@ src/modules/admin/users/
 
 ### Direct Comparison with Laravel
 
-| NestJS File | Laravel Equivalent | Primary Responsibility |
+| NestJS File / Folder | Laravel Equivalent | Primary Responsibility |
 |---|---|---|
 | `*.controller.ts` | `app/Http/Controllers/UserController.php` | Handles HTTP routing, extracts `@Body()` / `@Param()`, validates input via DTOs, and returns uniform `{ status, message, data }` responses. |
 | `*.service.ts` | `app/Services/UserService.php` or Model queries | Contains pure business logic: Prisma DB queries, transactions, bcrypt hashing, and domain rules. No HTTP-specific objects live here. |
 | `*.module.ts` | `app/Providers/UserServiceProvider.php` | The Dependency Injection container. Tells NestJS which controllers to register, which services to instantiate, and what to export to other modules. |
+| `dto/` | `app/Http/Requests/*.php` | Data Transfer Objects that validate input before the controller receives it. |
+| `views/` | `resources/views/emails/*.blade.php` | Feature-specific email and document templates (e.g. `users/views/otp.hbs`). |
 
 ### Why This Separation Matters:
 - **Clean Controllers**: Controllers stay slim (typically 3–5 lines per endpoint), acting solely as HTTP traffic directors.

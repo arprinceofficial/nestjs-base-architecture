@@ -5,7 +5,8 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as fs from 'fs/promises';
+import * as fs from 'fs';
+import * as fsp from 'fs/promises';
 import * as path from 'path';
 import * as Handlebars from 'handlebars';
 
@@ -52,7 +53,7 @@ export class TemplateService implements OnModuleInit {
 
         for (const dir of candidates) {
             try {
-                const stats = require('fs').statSync(dir);
+                const stats = fs.statSync(dir);
                 if (stats.isDirectory()) {
                     return dir;
                 }
@@ -63,6 +64,80 @@ export class TemplateService implements OnModuleInit {
 
         // Default fallback
         return path.resolve(process.cwd(), 'src/templates');
+    }
+
+    /**
+     * Resolves the full path of a template file, checking module views and global templates.
+     * Supports:
+     * - Module-level views (e.g. 'users/otp' -> 'src/modules/admin/users/views/otp.hbs')
+     * - Direct path ('modules/admin/users/views/otp.hbs')
+     * - Global templates ('emails/layout', 'reports/sample-report')
+     * - Bare template names ('otp' -> checks feature views first)
+     */
+    private resolveTemplatePath(templatePath: string): string {
+        const normalized = templatePath.endsWith('.hbs')
+            ? templatePath
+            : `${templatePath}.hbs`;
+
+        const rootCandidates = [
+            path.resolve(process.cwd(), 'src'),
+            path.resolve(process.cwd(), 'dist/src'),
+            path.resolve(process.cwd(), 'dist'),
+            path.resolve(__dirname, '../../..'),
+            path.resolve(__dirname, '../..'),
+        ];
+
+        const bareName = path.basename(normalized);
+        const withoutPrefix = normalized.replace(
+            /^(emails|templates|modules)\//,
+            '',
+        );
+
+        const candidates: string[] = [
+            // 1. Direct path inside baseDir
+            path.resolve(this.baseDir, normalized),
+            path.resolve(this.baseDir, withoutPrefix),
+        ];
+
+        // 2. Module-specific view paths
+        for (const root of rootCandidates) {
+            candidates.push(
+                // Direct relative to root
+                path.resolve(root, normalized),
+                // Module views: src/modules/admin/users/views/otp.hbs
+                path.resolve(root, 'modules/admin/users/views', bareName),
+                path.resolve(root, 'modules/admin/auth/views', bareName),
+                path.resolve(
+                    root,
+                    'modules/admin',
+                    withoutPrefix.replace('/', '/views/'),
+                ),
+                path.resolve(
+                    root,
+                    'modules',
+                    withoutPrefix.replace('/', '/views/'),
+                ),
+                // Global templates
+                path.resolve(root, 'templates/emails', bareName),
+                path.resolve(root, 'templates', normalized),
+            );
+        }
+
+        for (const candidate of candidates) {
+            try {
+                if (
+                    fs.existsSync(candidate) &&
+                    fs.statSync(candidate).isFile()
+                ) {
+                    return candidate;
+                }
+            } catch {
+                // Continue checking
+            }
+        }
+
+        // Fallback default
+        return path.resolve(this.baseDir, normalized);
     }
 
     /**
@@ -114,20 +189,17 @@ export class TemplateService implements OnModuleInit {
     private async getCompiledTemplate(
         templatePath: string,
     ): Promise<Handlebars.TemplateDelegate> {
-        const normalizedName = templatePath.endsWith('.hbs')
-            ? templatePath
-            : `${templatePath}.hbs`;
         const isProduction =
             this.configService.get<string>('NODE_ENV') === 'production';
 
-        if (isProduction && this.templateCache.has(normalizedName)) {
-            return this.templateCache.get(normalizedName)!;
+        if (isProduction && this.templateCache.has(templatePath)) {
+            return this.templateCache.get(templatePath)!;
         }
 
-        const fullPath = path.resolve(this.baseDir, normalizedName);
+        const fullPath = this.resolveTemplatePath(templatePath);
         let source: string;
         try {
-            source = await fs.readFile(fullPath, 'utf-8');
+            source = await fsp.readFile(fullPath, 'utf-8');
         } catch (err: any) {
             this.logger.error(`Template not found: ${fullPath}`);
             throw new NotFoundException(
@@ -137,7 +209,7 @@ export class TemplateService implements OnModuleInit {
 
         const compiled = this.hbs.compile(source);
         if (isProduction) {
-            this.templateCache.set(normalizedName, compiled);
+            this.templateCache.set(templatePath, compiled);
         }
         return compiled;
     }
@@ -145,7 +217,7 @@ export class TemplateService implements OnModuleInit {
     /**
      * General template rendering method.
      *
-     * @param templatePath Relative path inside templates dir (e.g. 'emails/otp', 'reports/sample-report')
+     * @param templatePath Relative path inside templates dir or module views
      * @param data Context variables for the template
      * @param options Render options (e.g., layout wrapping)
      */
@@ -181,8 +253,9 @@ export class TemplateService implements OnModuleInit {
 
     /**
      * Helper to render an email template wrapped in the standard email layout.
+     * Searches both feature module views (e.g. 'users/otp') and global 'emails/' templates.
      *
-     * @param templateName Name inside 'emails/' directory (e.g. 'otp')
+     * @param templateName Name inside 'emails/' directory or module views (e.g. 'users/otp' or 'otp')
      * @param data Context data
      * @param layout Optional layout override (defaults to 'emails/layout', or pass false for no layout)
      */
@@ -191,9 +264,11 @@ export class TemplateService implements OnModuleInit {
         data: Record<string, any> = {},
         layout: string | boolean = 'emails/layout',
     ): Promise<string> {
-        const templatePath = templateName.startsWith('emails/')
-            ? templateName
-            : `emails/${templateName}`;
+        const templatePath =
+            templateName.startsWith('emails/') ||
+            templateName.startsWith('modules/')
+                ? templateName
+                : templateName;
         return this.render(templatePath, data, { layout });
     }
 
