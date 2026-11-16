@@ -17,6 +17,7 @@ import {
 } from './dto/login.dto';
 import { ApiResponse } from '@/common/interfaces/api-response.interface';
 import { ApiMessages } from '@/common/constants/api-messages.constant';
+import { sanitizeUser } from '@/common/utils/model-hidden.util';
 
 @Injectable()
 export class AuthService {
@@ -55,9 +56,7 @@ export class AuthService {
     }
 
     private sanitizeUser(user: any) {
-        if (!user) return user;
-        const { password, ...sanitized } = user;
-        return sanitized;
+        return sanitizeUser(user);
     }
 
     async login(dto: LoginDto): Promise<ApiResponse> {

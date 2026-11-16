@@ -12,6 +12,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { FilterUserDto } from './dto/filter-user.dto';
 import { ApiMessages } from '@/common/constants/api-messages.constant';
 import { ApiResponse } from '@/common/interfaces/api-response.interface';
+import { sanitizeUser } from '@/common/utils/model-hidden.util';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -19,9 +20,7 @@ export class UsersService {
     constructor(private readonly prisma: PrismaService) {}
 
     private sanitizeUser(user: any) {
-        if (!user) return user;
-        const { password, ...sanitized } = user;
-        return sanitized;
+        return sanitizeUser(user);
     }
 
     async findAll(query: FilterUserDto): Promise<ApiResponse> {
